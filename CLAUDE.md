@@ -75,7 +75,12 @@ Modules communicate through small typed event emitters. If you find yourself imp
 
 ## Secrets & safety
 
-- Never read, print, or edit `.env*` files or anything under `tools/.r2-credentials*`. Use `.env.example` for variable names.
+- Never read, print, edit, or shell out to view `.env*` files or anything under `tools/.r2-credentials*` /
+  `tools/.supabase-service-key*` — this means no `Read`, and no `Bash` command either (`cat`, `type`,
+  `Get-Content`, `printenv`, `env`, piping into `curl`, etc.). Use `.env.example` for variable names.
+  `.claude/settings.json` denies the common forms of this, but that list is defense-in-depth, not a sandbox —
+  the actual reason this is safe is that no legitimate task in this project ever requires reading these files.
+  If a task ever seems to require a secret value, stop and ask Kunshe rather than reading the file.
 - The only keys allowed in frontend code are `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (public by design). A Supabase **service-role** key, a Supabase Storage upload key beyond the anon key's scope, or any future R2 secret must never appear in `src/`, `public/`, or git history.
 - Do not connect to the Supabase MCP server or run commands against the live Supabase project.
 - Do not run upload, deploy, or DNS commands. Write them; Kunshe runs them.

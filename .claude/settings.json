@@ -22,7 +22,22 @@
       "Bash(vercel:*)",
       "Bash(npx vercel:*)",
       "Bash(supabase:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(cat *.env*)",
+      "Bash(type *.env*)",
+      "Bash(more *.env*)",
+      "Bash(less *.env*)",
+      "Bash(head *.env*)",
+      "Bash(tail *.env*)",
+      "Bash(Get-Content *.env*)",
+      "Bash(gc *.env*)",
+      "Bash(echo $env:*)",
+      "Bash(printenv)",
+      "Bash(env)",
+      "Bash(Get-ChildItem Env:*)",
+      "Bash(*curl*.env*)",
+      "Bash(*Invoke-WebRequest*.env*)",
+      "Bash(*Invoke-RestMethod*.env*)"
     ]
   }
 }
