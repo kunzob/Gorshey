@@ -18,6 +18,8 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [ ] M11 Deploy
 
 ## Decisions made during the build
+- Storage backend: start on **Supabase Storage** (free, no card, ~200-track ceiling), migrate to **Cloudflare R2**
+  later when approaching that ceiling. Manifest stores full URLs so the swap is config-only. See ARCHITECTURE §0.
 
 ## Open questions / follow-ups
 - Licensing of tracks: deferred by Kunshe; manifest stays source-agnostic.

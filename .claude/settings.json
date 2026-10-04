@@ -15,6 +15,7 @@
       "Read(./.env)",
       "Read(./.env.*)",
       "Read(./tools/.r2-credentials*)",
+      "Read(./tools/.supabase-service-key*)",
       "Bash(npm run upload:*)",
       "Bash(wrangler:*)",
       "Bash(npx wrangler:*)",

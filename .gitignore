@@ -1,6 +1,9 @@
 node_modules/
 dist/
-.env*
+.env
+.env.*
 !.env.example
-media/
+*.env
 tools/.r2-credentials*
+tools/.supabase-service-key*
+media/

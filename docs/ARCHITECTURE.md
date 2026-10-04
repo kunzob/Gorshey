@@ -2,6 +2,19 @@
 
 This records decisions already agreed. Change them only with Kunshe's approval, and log the change in `PROGRESS.md`.
 
+## 0. Storage backend (swappable)
+
+- **Now:** Supabase Storage, bucket `gorshey-media` (public bucket, read-only policy for `anon`). Free tier 1 GB —
+  fits roughly the first 200 tracks at 128–160 kbps. No card required.
+- **Later:** Cloudflare R2, bucket `gorshey-media` — free egress unconditionally, 10 GB free storage, then
+  $0.015/GB-month. Requires a card + a Cloudflare budget alert (set to a low threshold, e.g. $1) at setup time.
+- **Trigger to migrate:** approaching ~800 MB on Supabase, or needing >~200 tracks, whichever comes first.
+- **What migration actually involves:** re-upload existing files to R2 (`tools/upload-r2.ts`, already written),
+  change `cdnBase` in `tools/tracks.source.yaml`, run `npm run manifest`. No application code changes — every
+  track's `src`/`artwork` field is a full URL (§8), so the player never knows or cares which backend served it.
+- The upload script (`tools/upload-media.ts`) targets whichever backend is active via a `STORAGE_BACKEND` env var
+  (`supabase` | `r2`); both code paths are written in M1, so flipping the switch later needs no new code.
+
 ## 1. Virtual synchronized broadcast
 - `manifest.json` holds `epoch` (ISO-8601 UTC instant) and an ordered track list with **measured** float durations.
 - `position = (clock.now() − epoch) mod totalDuration`; prefix sums + binary search map it to `{trackIdx, offsetSec}`.
@@ -75,6 +88,10 @@ New SW versions show an "update available" notice; never auto-reload mid-song.
 Changing the track list or order shifts everyone's position — that is expected and fine.
 
 ## 9. Hosting & headers
-- R2 objects: content-hashed filenames, `Cache-Control: public, max-age=31536000, immutable`.
-- Vercel: `index.html` and `sw.js` → `no-cache`; hashed assets → `immutable`; CSP allowing self, the R2 domain
-  (media/img) and the Supabase project (https + wss).
+- Media objects (Supabase Storage now, R2 later): content-hashed filenames. On R2, set
+  `Cache-Control: public, max-age=31536000, immutable` on upload. Supabase Storage sets its own cache headers on
+  public objects; verify them in M1 and override via upload options if too short.
+- Vercel: `index.html` and `sw.js` → `no-cache`; hashed assets → `immutable`; CSP allowing self, the active media
+  domain (Supabase project domain now; add the R2 custom domain at migration time), and the Supabase project for
+  presence (https + wss) — note the media domain and the presence domain are the *same* Supabase project today,
+  which simplifies the CSP until R2 migration splits them.
