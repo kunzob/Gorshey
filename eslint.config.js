@@ -12,6 +12,11 @@ const noDateNow = {
   message: 'Use clock.now() from src/core/clock.ts instead of Date.now().',
 };
 
+const noNewDate = {
+  selector: "NewExpression[callee.name='Date']",
+  message: 'Use clock.now() from src/core/clock.ts instead of new Date().',
+};
+
 export default tseslint.config(
   { ignores: ['dist/**', 'node_modules/**', 'media/**', '.claude/**'] },
   ...tseslint.configs.recommended,
@@ -19,7 +24,7 @@ export default tseslint.config(
     files: ['**/*.{ts,js}'],
     rules: {
       'no-restricted-globals': ['error', noDocument],
-      'no-restricted-syntax': ['error', noDateNow],
+      'no-restricted-syntax': ['error', noDateNow, noNewDate],
     },
   },
   {
