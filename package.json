@@ -9,10 +9,13 @@
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "eslint . && tsc --noEmit",
-    "manifest": "tsx tools/build-manifest.ts",
-    "e2e": "echo \"e2e not configured until M10\" && exit 0"
+    "manifest": "tsx tools/run-manifest.ts && node .claude/skills/gorshey-tibetan/scripts/check-tibetan.mjs public/manifest.json",
+    "e2e": "echo \"e2e not configured until M10\" && exit 0",
+    "upload": "tsx tools/upload-media.ts"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.117.2",
+    "@types/node": "^26.6.4",
     "eslint": "^10.12.0",
     "prettier": "^3.9.9",
     "tsx": "^4.23.15",

@@ -1,0 +1,9 @@
+# Template for tools/tracks.source.yaml (the real file is written by Kunshe and is not a secret).
+# Paths are relative to the repo root. cdnBase is the only line that changes at migration (ARCHITECTURE §0).
+epoch: "2026-01-01T00:00:00Z"
+cdnBase: "https://<project-ref>.supabase.co/storage/v1/object/public/gorshey-media"
+tracks:
+  - file: media/audio/song1.m4a
+    art: media/art/song1.jpg
+    title:  { bo: "སྒྲོལ་མ།", en: "Drolma" }
+    artist: { bo: "…", en: "…" }
