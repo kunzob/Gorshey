@@ -4,6 +4,6 @@ dist/
 .env.*
 !.env.example
 *.env
+media/
 tools/.r2-credentials*
 tools/.supabase-service-key*
-media/
