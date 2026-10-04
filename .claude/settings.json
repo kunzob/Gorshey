@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev)",
+      "Bash(npm run test:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run build)",
+      "Bash(npm run manifest)",
+      "Bash(npm run e2e)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./tools/.r2-credentials*)",
+      "Bash(npm run upload:*)",
+      "Bash(wrangler:*)",
+      "Bash(npx wrangler:*)",
+      "Bash(vercel:*)",
+      "Bash(npx vercel:*)",
+      "Bash(supabase:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
