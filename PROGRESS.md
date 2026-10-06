@@ -111,7 +111,8 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [HUMAN] Visual check at phone width in Chrome: layout, the kora ring, and the touch targets.
 - [HUMAN] Tibetan rendering check: no clipped or overlapping stacks in the title, subtitle or brand mark.
 - [HUMAN] CLS check when the Tibetan web font swaps in (Performance panel, CLS about 0).
-- Needs your approval: a DOM test library (happy-dom recommended) for the render.ts behaviour tests.
-- Tibetan precache for M8: `/fonts/NotoSerifTibetan-tibetan-subset.woff2` and `/fonts/OFL.txt` belong in the precache
-  list (the page preloads the font on every load, so it is always needed).
+- DOM tests: `tests/render.test.ts` uses happy-dom 20.14.5 (pinned, devDependency, per-file docblock). 17 tests pass.
+  Mutation check: a forced lang/innerHTML change fails 4 tests; a status change fails 2.
+- **M8 (added to docs/tasks/M8-pwa.md):** precache the Tibetan font in the service worker:
+  `/fonts/NotoSerifTibetan-tibetan-subset.woff2` and `/fonts/OFL.txt`.
 - Native review: 14 bo strings are unreviewed (`npm run i18n:review`).

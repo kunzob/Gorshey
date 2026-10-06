@@ -20,3 +20,8 @@
 ## Acceptance
 - Lighthouse "installable" passes; offline reload shows the shell with `player.offline` state.
 - DevTools Network: audio requests show "(from ServiceWorker)" **never**; seeking still produces 206 responses.
+
+## Font precache (added after M5)
+- Precache the Tibetan font in the service worker: `/fonts/NotoSerifTibetan-tibetan-subset.woff2`. The page preloads it
+  on every load, so it is always needed. Precache `/fonts/OFL.txt` with it.
+- Media (audio, artwork) stays out of the precache, per ARCHITECTURE §6.
