@@ -23,3 +23,8 @@ export interface Manifest {
   totalDuration: number;
   tracks: ManifestTrack[];
 }
+
+/** Anything that can report the corrected current time in ms (clock.now satisfies this). */
+export interface Clock {
+  now(): number;
+}
