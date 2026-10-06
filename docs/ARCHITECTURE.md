@@ -32,6 +32,53 @@ This records decisions already agreed. Change them only with Kunshe's approval, 
 - Pause means "leave the live stream"; play again = rejoin live (re-sync), like a real radio.
 - Media Session: title/artist/album/artwork; `seekto`, `previoustrack`, `nexttrack` explicitly disabled.
 
+### 3a. AudioEngine state machine (M3)
+
+`R` = `resolve(clock.now(), epochMs, starts)`. Every load starts with R. Nothing advances `idx+1`.
+
+**States:** `idle`, `loading`, `playing`, `buffering`, `paused`, `error`.
+
+| From → To | Trigger | Action | Calls R? |
+| :--- | :--- | :--- | :--- |
+| idle → loading | `play()` (user tap) | Set `src`; call `el.play()` at once (iOS unlock). Emit `track`. | yes |
+| loading (metadata) | `loadedmetadata` | Re-resolve. If the track changed, reload; else set `currentTime = offsetSec`. | yes |
+| loading → playing | `playing` | Start the 250 ms tick. Reset the reload count and retry. | no |
+| playing → buffering | `waiting` / `stalled` | Emit `state`. Tick keeps running. | no |
+| buffering → playing | `playing` | Emit `state`. | no |
+| playing → loading | `ended` | Re-resolve. If the track changed, load it. If the clock still says the same track, wait until `endsAtMs` and re-check. | yes |
+| playing → loading | tick sees a new track (boundary without `ended`) | Load the resolved track. | yes |
+| playing → playing | `onVisible()`, track changed or drift > 2 s | Reload, or seek the same track. | yes |
+| active → loading | first `error` | Stop tick. Wait 3 s, then re-resolve and reload. | yes (on retry) |
+| → error | second `error`, or the reload cap is hit | Pause, drop all timers. Terminal until `play()`. | no |
+| error → loading | `play()` | Reset the count, then re-sync. | yes |
+| active → paused | `pause()` | `el.pause()`; invalidate the load token; clear all timers. | no |
+| paused → loading | `play()` | Full re-sync. The stale position is never resumed. | yes |
+| active → paused | `play()` rejected (e.g. `NotAllowedError`) | Invalidate the load; pause the element; tappable again. | no |
+
+**Rules**
+- **Reload cap:** `MAX_RELOADS = 3`. Reloads count from any trigger (metadata, tick, `onVisible`, `ended`, retry). The count resets when the element reaches `playing`. The next reload enters `error`.
+- **Tick** runs in `playing` and `buffering`, so a boundary crossed during a stall is still caught.
+- **Stale callbacks:** every load bumps a token. A late `loadedmetadata`, retry timer or play rejection is ignored once the user has paused or the load has been replaced.
+
+**Public API (`src/audio/AudioEngine.ts`)**
+
+```ts
+type EngineState = 'idle' | 'loading' | 'playing' | 'buffering' | 'paused' | 'error';
+interface TickEvent { trackIdx: number; positionSec: number }
+
+class AudioEngine {
+  constructor(manifest: Manifest, clock: Clock, el?: HTMLAudioElement) // el defaults to one new Audio()
+  play(): void          // call from a click handler; idempotent while active
+  pause(): void         // leaves live; idempotent when not active
+  onVisible(): void     // re-sync on visibilitychange (no-op unless playing or buffering)
+  readonly state: EngineState
+  on('state', (s: EngineState) => void): Unsubscribe
+  on('track', (idx: number) => void): Unsubscribe
+  on('tick',  (t: TickEvent) => void): Unsubscribe   // every 250 ms while playing or buffering
+  destroy(): void       // clears timers, removes element listeners, drops subscribers
+}
+```
+
 ## 4. Presence
 - Channel `gorshey-kora`, per-tab UUID in `sessionStorage`.
 - Subscribe on load (to show the count); `track()` on play, `untrack()` on pause → count = people actually listening.

@@ -57,6 +57,19 @@ The agent updates this file at the end of every task. Newest notes at the bottom
   branches on `src/core/**` only. `coverage/` is gitignored.
 - Lint and build now type-check with `noUncheckedIndexedAccess`; index access in core uses `as number` with a comment.
 
+- M3 audio engine (code complete, manual checks pending, so the milestone is not ticked yet): `src/audio/AudioEngine.ts`,
+  `src/audio/emitter.ts`, `src/ui/devHarness.ts` (temporary, removed in M5), `src/main.ts` wiring. The state machine and
+  API are in ARCHITECTURE §3a. 30 engine tests in `tests/audioEngine.test.ts`.
+- M3 decisions: the reload cap is 3 (`MAX_RELOADS`), and the count resets on `playing`. The tick runs in `playing` and
+  `buffering`. A play() rejection pauses the element and returns to `paused`. Boundary timers re-check the clock and never
+  reload the ended track.
+- M3 float finding: `211.255167 s` in ms resolves to `211.2551669921875`, just under the boundary. The clock-lag path
+  covers this with a timer of about 0 ms, so a boundary that is a few microseconds away is not a bug.
+- M3 not verified here: two-tab sync, and leaving a tab paused for a minute then rejoining. These need two real browser
+  tabs and real time.
+- [HUMAN] iPhone check (Kunshe): run `npm run dev -- --host` on the local network and confirm the first tap plays on
+  iOS Safari.
+
 ## Open questions / follow-ups
 - Confirm the manifest version format (content hash vs ISO timestamp in ARCHITECTURE §8).
 - ARCHITECTURE §0 says `tools/upload-r2.ts` is "already written" and names `tools/upload-media.ts`. The file that exists is `upload-media.ts`; no upload-r2 file exists. Fix the doc.
