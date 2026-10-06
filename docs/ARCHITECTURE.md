@@ -89,6 +89,36 @@ class AudioEngine {
 - Locales now: `bo`, `en`. Later: `fr`, `zh-Hans`, others — adding one = one catalog file + metadata fields.
 - UI strings: `src/i18n/catalogs/<locale>.json`, flat dotted keys.
 - Track metadata: language maps `{ "bo": "…", "en": "…" }`; resolver falls back `current → en → bo`.
+
+**M4 API (`src/i18n/i18n.ts`)**
+
+```ts
+// locales.ts: the only list to edit when adding a language (plus one catalog file)
+export const LOCALES = [{ code: 'bo', label: 'བོད་ཡིག' }, { code: 'en', label: 'English' }] as const;
+type Locale = 'bo' | 'en';
+
+// catalogs/<locale>.json: flat dotted keys; a value is a string or a plural object { one, other, … }
+t(key: string, vars?: Record<string, string | number>): string   // {n} interpolation, Western digits
+setLocale(code: Locale): void    // throws if not in LOCALES; persists; calls applier; emits
+getLocale(): Locale
+onLocaleChange(cb: (l: Locale) => void): Unsubscribe             // the language-change event
+setLocaleApplier(fn: (code: Locale) => void): void               // ui/locale.ts sets <html lang>
+detectLocale(): Locale          // stored (if in LOCALES) → navigator.languages prefix → 'en'
+pick(map: Partial<Record<Locale, string>>, locale: Locale): string  // map[l] ?? en ?? bo ?? ''
+formatTime(ms: number): string  // HH:MM, latn digits; takes epoch ms so no Date is built here
+formatDuration(sec: number): string   // m:ss
+formatNumber(n: number): string       // en-US grouping, latn digits in every locale
+titleParts(title: { bo; en }, locale): LangRun[]   // Tibetan original lang=bo first, then subtitle
+brandParts(): LangRun[]                            // Tibetan runs lang=bo, the rest lang=en
+```
+
+String set (M4, minimal): `station.name`, `player.play`, `player.pause`, `player.live`, `badge.listeners`,
+`player.nowPlaying`, `player.nextUp`, `player.error`, `player.offline`. Every `bo` value needs native review
+(`src/i18n/catalogs/bo.review.json`; `npm run i18n:review` lists the rest).
+
+**Markup and CSS.** `ui/locale.ts` sets `<html lang>` through the applier. `src/styles/tibetan.css` holds the
+`:lang(bo)` rules; the font files arrive in M5. The language preference is stored under `gorshey.locale`.
+
 - Song title display: Tibetan original always primary; current-locale title as subtitle.
 - Digits: always Western (`numberingSystem: 'latn'`). Time formatting uses `Intl`, falling back to `en` for `bo`.
 - `<html lang>` is set on locale change so `:lang()` CSS applies automatically.

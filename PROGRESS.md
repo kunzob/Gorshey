@@ -7,8 +7,8 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [x] M0  Project scaffold
 - [x] M1  Content pipeline (manifest + R2 upload script)
 - [x] M2  Sync core (clock + schedule)
-- [ ] M3  Audio engine
-- [ ] M4  i18n (bo / en)
+- [x] M3  Audio engine
+- [x] M4  i18n (bo / en)
 - [ ] M5  UI shell (Potala theme, kora ring)
 - [ ] M6  Presence (Supabase)
 - [ ] M7  Media Session
@@ -57,7 +57,7 @@ The agent updates this file at the end of every task. Newest notes at the bottom
   branches on `src/core/**` only. `coverage/` is gitignored.
 - Lint and build now type-check with `noUncheckedIndexedAccess`; index access in core uses `as number` with a comment.
 
-- M3 audio engine (code complete, manual checks pending, so the milestone is not ticked yet): `src/audio/AudioEngine.ts`,
+- M3 audio engine (accepted by Kunshe): `src/audio/AudioEngine.ts`,
   `src/audio/emitter.ts`, `src/ui/devHarness.ts` (temporary, removed in M5), `src/main.ts` wiring. The state machine and
   API are in ARCHITECTURE §3a. 30 engine tests in `tests/audioEngine.test.ts`.
 - M3 decisions: the reload cap is 3 (`MAX_RELOADS`), and the count resets on `playing`. The tick runs in `playing` and
@@ -67,20 +67,27 @@ The agent updates this file at the end of every task. Newest notes at the bottom
   covers this with a timer of about 0 ms, so a boundary that is a few microseconds away is not a bug.
 - M3 drift correction (added after the first manual test: the late joiner landed seconds off): on each transition to
   `playing`, seek when |drift| > 0.75 s; max 3 per play session, then cap-hit recorded. The dev harness shows a 1 s debug
-  readout (expected vs actual, drift, el.duration vs manifest, corrections). **Not verified:** the fix itself. Retest is
-  pending in two Chrome windows. Known gap: no correction runs during smooth playback between transitions.
+  readout (expected vs actual, drift, el.duration vs manifest, corrections). Known gap: no correction runs during smooth
+  playback between transitions.
 - Sync refinement (after the two-tab failures, which the readout showed are not explained by HTTP caching: the Date header
   matched local time within 1 s in both windows): the coarse offset stays as before. `refineOffset()` then polls HEAD every
   100 ms (cache-busted, no-store), up to 25 requests / 3 s, and brackets each server-second tick. Offset = server boundary
   − local boundary estimate, median over brackets. No tick means the coarse offset is kept, and `syncPrecision()` says so.
   The engine re-syncs once through resolve() when a refinement moves the position by more than 0.3 s. Drift threshold is 0.3 s
-  once refined, 0.75 s while coarse. **Not verified:** the fix itself; retest in two Chrome windows.
-- M3 not verified here: two-tab sync, and leaving a tab paused for a minute then rejoining. These need two real browser
-  tabs and real time.
+  once refined, 0.75 s while coarse. Two-window desktop retest **passed** after the CBR re-encode and this refinement
+  (reported by Kunshe).
+- Still open for M3: the iPhone check below, and the clock re-check on the deployed Vercel site (see follow-ups).
 - [HUMAN] iPhone check (Kunshe): run `npm run dev -- --host` on the local network and confirm the first tap plays on
   iOS Safari.
 
 ## Open questions / follow-ups
+- [HUMAN] Re-check clock precision on the deployed Vercel site. Date and Age headers may behave differently behind the CDN,
+  so `syncPrecision()` must be confirmed to reach `refined` there.
+- Add a normalise-to-CBR step to the upload pipeline. VBR mp3 without a seek table caused inaccurate seeking in testing.
+- [native-speaker review] **Needs native review (all 9 `bo` strings in src/i18n/catalogs/bo.json, drafted by the agent):**
+  station.name, player.play, player.pause, player.live, badge.listeners, player.nowPlaying, player.nextUp, player.error,
+  player.offline. Listed by `npm run i18n:review`. Also the Tibetan track titles (kept verbatim from Kunshe).
+  The M11 checklist requires `i18n:review` to report zero.
 - Confirm the manifest version format (content hash vs ISO timestamp in ARCHITECTURE §8).
 - ARCHITECTURE §0 says `tools/upload-r2.ts` is "already written" and names `tools/upload-media.ts`. The file that exists is `upload-media.ts`; no upload-r2 file exists. Fix the doc.
 - Confirm the credential variable names above before Kunshe creates the files.

@@ -24,3 +24,5 @@
 ## Acceptance
 - securityheaders-style check shows CSP and the other headers present; no CSP violations in the console.
 - Production plays in sync on two devices; presence count works.
+- `npm run i18n:review` reports zero unreviewed bo strings (native-speaker review recorded in bo.review.json).
+- Clock precision reads `refined` on the deployed Vercel site (Date/Age headers behind the CDN).
