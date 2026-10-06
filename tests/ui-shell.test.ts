@@ -395,10 +395,10 @@ describe('phone layout and Tibetan typography (visual-bug fixes)', () => {
     expect(bareSerif === -1 || bareSerif > tibetan).toBe(true);
   });
 
-  it('one Tibetan scale: both Tibetan @font-face rules use size-adjust 120%', () => {
+  it('one Tibetan scale: both Tibetan @font-face rules use size-adjust 125%', () => {
     const faces = css('src/styles/fonts.css').match(/@font-face\s*\{[^}]*\}/g) ?? [];
     expect(faces).toHaveLength(2);
-    for (const face of faces) expect(face).toMatch(/size-adjust:\s*120%/);
+    for (const face of faces) expect(face).toMatch(/size-adjust:\s*125%/);
   });
 
   it('Tibetan is scaled through size-adjust, not a per-element font-size', () => {

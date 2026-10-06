@@ -34,7 +34,23 @@
   outline-offset: 2px;
 }
 
+/* Nothing in the column may be wider than the column: long brand or next-up text wraps instead of pushing the header. */
+.player > * {
+  max-width: 100%;
+}
+
+.station {
+  margin: 0;
+  font-size: 1.25rem;
+  overflow-wrap: anywhere;
+}
+
+.nextup {
+  overflow-wrap: anywhere;
+}
+
 .top {
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;

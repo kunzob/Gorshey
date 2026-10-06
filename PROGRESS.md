@@ -124,7 +124,16 @@ The agent updates this file at the end of every task. Newest notes at the bottom
   size-adjust, not font-size); `.player` is `min-height: 100dvh` with border-box padding; the ring is sized from height as well as width.
 - Position under the artist: the empty paused state no longer shows text. It was the drafted Tibetan "ཚོད་མེད།",
   which read as an extra line. Now empty, so nothing shows there when paused.
-- OPEN, artwork not shown: `render.ts` never sets the `<img id="artwork">` source. The manifest URL returns
-  `200 image/jpeg`, so the image would load once wired. Fix not yet applied; awaiting go.
+- DEFERRED to M9 (theme polish): artwork inside the ring. `render.ts` does not set the `<img id="artwork">` source yet.
+  The manifest URL returns `200 image/jpeg`, so it will load once wired. Requirement for M9: a missing or failing image
+  must fall back gracefully. The ring stays, the image is hidden on error (no broken-image icon), and the layout does
+  not shift.
+- Round 3 (toggle label): the label is now a `<span lang="bo">` inside the button, which keeps the UI language. The Tibetan
+  scale is 125% (size-adjust) for all Tibetan text. Headless Chrome screenshot at a true 390 px width (an iframe) shows
+  the Tibetan label at the title's scale. The 48 px target is unchanged.
+- Position line: empty while paused. It shows "m:ss / m:ss" while playing (DOM test). A headless screenshot cannot
+  reach the playing state (no autoplay, no network audio), so this is verified by test only.
+- The earlier extra Tibetan line under the artist was the paused-state placeholder "ཚོད་མེད།" ("no time"), which the
+  Tibetan check had forced into the catalog. Removed.
 - [HUMAN] Re-check at phone width in Chrome: the page fits one viewport in both languages (no scroll), and the play
   button and next-up line are visible without scrolling. Layout is not measured in tests.

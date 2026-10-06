@@ -86,9 +86,13 @@ export function mountPlayer(opts: {
   function paintLocale(locale: Locale): void {
     writeRuns(r.station, brandParts());
     const target = localeToggleTarget(locale);
-    r.locale.textContent = target.label;
+    // The label is a span in its own language; the button itself stays in the UI language.
+    const label = document.createElement('span');
+    label.lang = target.code;
+    label.textContent = target.label;
+    r.locale.replaceChildren(label);
     r.locale.setAttribute('aria-label', target.label);
-    r.locale.lang = target.code;
+    r.locale.lang = locale;
     r.eyebrow.textContent = t('eyebrow.line', { live: t('player.live'), place: t('place.marpoRi') });
     r.update.textContent = t('update.available');
     paintTrack(locale);

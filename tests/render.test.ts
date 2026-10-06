@@ -272,10 +272,28 @@ describe('eyebrow comes from the catalogs', () => {
 describe('language toggle label', () => {
   it('the label carries its own language, so the Tibetan label gets the Tibetan treatment', () => {
     expect($('locale').textContent).toBe('བོད་ཡིག');
-    expect($('locale').lang).toBe('bo');
+    expect($('locale').querySelector('span')!.lang).toBe('bo');
     setLocale('bo');
     expect($('locale').textContent).toBe('English');
-    expect($('locale').lang).toBe('en');
+    expect($('locale').querySelector('span')!.lang).toBe('en');
+    setLocale('en');
+  });
+});
+
+describe('language toggle label span', () => {
+  it('the toggle label sits in its own span carrying its language (bo for the Tibetan label)', () => {
+    const label = $('locale').querySelector('span');
+    expect(label).not.toBeNull();
+    expect(label!.lang).toBe('bo');
+    expect(label!.textContent).toBe('བོད་ཡིག');
+    expect($('locale').lang).toBe('en'); // the button itself stays in the UI language
+  });
+
+  it('after a switch, the span carries the new label language', () => {
+    $('locale').click();
+    const label = $('locale').querySelector('span');
+    expect(label!.lang).toBe('en');
+    expect(label!.textContent).toBe('English');
     setLocale('en');
   });
 });

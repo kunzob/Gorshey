@@ -7,7 +7,7 @@
   font-style: normal;
   unicode-range: U+0F00-0FFF;
   font-display: swap;
-  size-adjust: 120%; /* the one Tibetan scale; tune in M10 */
+  size-adjust: 125%; /* the one Tibetan scale; tune in M10 */
 }
 
 /* System fallbacks, so the swap does not jump while the web font loads. */
@@ -15,5 +15,5 @@
   font-family: "Gorshey Tibetan Fallback";
   src: local("Kailasa"), local("Microsoft Himalaya"), local("Tibetan Machine Uni");
   unicode-range: U+0F00-0FFF;
-  size-adjust: 120%; /* same scale as the web font, so the swap does not change size */
+  size-adjust: 125%; /* same scale as the web font, so the swap does not change size */
 }
