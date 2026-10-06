@@ -8,3 +8,6 @@ coverage/
 media/
 tools/.r2-credentials*
 tools/.supabase-service-key*
+
+# Design mockups and scratch work (not part of the app)
+scratch/
