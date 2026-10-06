@@ -1,6 +1,12 @@
 import { resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { parseEnvFile, planUploads, resolveBackendName } from '../tools/upload-media';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  parseEnvFile,
+  planUploads,
+  resolveBackendName,
+  validateSupabaseUrl,
+} from '../tools/upload-media';
+import { ensureUploaded } from '../tools/storage/types';
 import type { SourceConfig, TrackFacts } from '../tools/build-manifest';
 
 const source: SourceConfig = {
@@ -49,6 +55,24 @@ describe('planUploads', () => {
   });
 });
 
+describe('planUploads → storage backend keys', () => {
+  it('hands the backend bare bucket-relative keys (no leading slash, no full URL)', async () => {
+    const [audio] = planUploads(source, facts, '/repo');
+    if (!audio) throw new Error('expected an audio upload item');
+    const upload = vi.fn().mockResolvedValue(undefined);
+    const exists = vi.fn().mockResolvedValue(false);
+
+    await ensureUploaded({ upload, exists }, audio.localPath, audio.remoteKey, audio.contentType);
+
+    expect(exists).toHaveBeenCalledWith('audio/a1b2c3d4e5f6.m4a');
+    expect(upload).toHaveBeenCalledWith(audio.localPath, 'audio/a1b2c3d4e5f6.m4a', 'audio/mp4');
+    for (const [key] of upload.mock.calls) {
+      expect(key).not.toMatch(/^\//);
+      expect(key).not.toMatch(/^https?:\/\//);
+    }
+  });
+});
+
 describe('parseEnvFile', () => {
   it('reads KEY=VALUE pairs, skipping comments, blanks, and surrounding quotes', () => {
     const env = parseEnvFile(
@@ -76,5 +100,25 @@ describe('resolveBackendName', () => {
     expect(() => resolveBackendName({ STORAGE_BACKEND: 's3' })).toThrow(
       'unknown STORAGE_BACKEND "s3" (expected supabase or r2)',
     );
+  });
+});
+
+describe('validateSupabaseUrl', () => {
+  it('accepts the bare project origin', () => {
+    expect(validateSupabaseUrl('https://abcd.supabase.co')).toBe('https://abcd.supabase.co');
+  });
+
+  // Regression: a /rest/v1 suffix made every storage request 404 with
+  // "Invalid path specified in request URL", and exists() misread that as "missing".
+  it('rejects a /rest/v1 suffix before any request is made', () => {
+    expect(() => validateSupabaseUrl('https://abcd.supabase.co/rest/v1/')).toThrow(/bare project origin/);
+    expect(() => validateSupabaseUrl('https://abcd.supabase.co/rest/v1')).toThrow(/found path "\/rest\/v1"/);
+  });
+
+  it('rejects a trailing slash, query, http, and non-URLs', () => {
+    expect(() => validateSupabaseUrl('https://abcd.supabase.co/')).toThrow(/trailing slash/);
+    expect(() => validateSupabaseUrl('https://abcd.supabase.co?x=1')).toThrow(/bare project origin/);
+    expect(() => validateSupabaseUrl('http://abcd.supabase.co')).toThrow(/https/);
+    expect(() => validateSupabaseUrl('abcd.supabase.co')).toThrow(/not a valid URL/);
   });
 });

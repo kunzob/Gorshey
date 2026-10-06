@@ -69,6 +69,28 @@ export function parseEnvFile(text: string): Record<string, string> {
   return env;
 }
 
+// Supabase-js appends /storage/v1 itself, so SUPABASE_URL must be the bare project origin.
+// A path here (e.g. the /rest/v1 suffix shown on some dashboard pages) sends every request
+// to the wrong route, and the 404s that come back look like "object not found".
+export function validateSupabaseUrl(value: string): string {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error('SUPABASE_URL is not a valid URL. Expected https://<project-ref>.supabase.co');
+  }
+  if (url.protocol !== 'https:') {
+    throw new Error('SUPABASE_URL must use https. Expected https://<project-ref>.supabase.co');
+  }
+  if (url.pathname !== '/' || url.search || url.hash || value.endsWith('/')) {
+    throw new Error(
+      'SUPABASE_URL must be the bare project origin with no path or trailing slash ' +
+        `(found path "${url.pathname}"). Expected https://<project-ref>.supabase.co`,
+    );
+  }
+  return url.origin;
+}
+
 function required(env: Record<string, string>, key: string, file: string): string {
   const value = env[key];
   if (!value) throw new Error(`${file} is missing ${key}`);
@@ -80,7 +102,7 @@ async function createBackend(name: BackendName, root: string): Promise<StorageBa
     const file = 'tools/.supabase-service-key.env';
     const env = parseEnvFile(await readFile(resolve(root, file), 'utf8'));
     const client = createClient(
-      required(env, 'SUPABASE_URL', file),
+      validateSupabaseUrl(required(env, 'SUPABASE_URL', file)),
       required(env, 'SUPABASE_SERVICE_ROLE_KEY', file),
       { auth: { persistSession: false } },
     );

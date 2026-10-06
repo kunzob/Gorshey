@@ -27,12 +27,19 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): StorageBack
       }
     },
 
+    // Asks "is this name in its folder?" by listing, instead of HEAD-ing the object. Supabase
+    // answers a HEAD for a missing object with a bodyless HTTP 400, which is indistinguishable
+    // from a real bad request. A listing answers "missing" with an empty array and no error,
+    // so any error that does come back (bad key, permissions, network) is a real failure.
     async exists(remoteKey) {
-      const { data, error } = await bucket().exists(remoteKey);
+      const slash = remoteKey.lastIndexOf('/');
+      const folder = slash >= 0 ? remoteKey.slice(0, slash) : '';
+      const name = remoteKey.slice(slash + 1);
+      const { data, error } = await bucket().list(folder, { search: name, limit: 100 });
       if (error) {
         throw new Error(`supabase exists check failed for ${remoteKey}: ${error.message}`);
       }
-      return data;
+      return (data ?? []).some((entry) => entry.name === name);
     },
   };
 }
