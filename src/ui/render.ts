@@ -71,7 +71,6 @@ export function mountPlayer(opts: {
   }
 
   function paintLocale(locale: Locale): void {
-    document.documentElement.lang = locale;
     writeRuns(r.station, brandParts());
     const target = localeToggleTarget(locale);
     r.locale.textContent = target.label;

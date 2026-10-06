@@ -173,3 +173,12 @@ Changing the track list or order shifts everyone's position — that is expected
   domain (Supabase project domain now; add the R2 custom domain at migration time), and the Supabase project for
   presence (https + wss) — note the media domain and the presence domain are the *same* Supabase project today,
   which simplifies the CSP until R2 migration splits them.
+
+**M5 UI rules (as built).**
+- `src/ui/render.ts` is the only module that writes the player DOM. It sets text with `textContent` only, and writes
+  Latin and Tibetan as separate `<span lang>` runs.
+- `<html lang>` has one writer: the applier `applyDocumentLang` in `src/ui/locale.ts`, registered with `setLocaleApplier`.
+  `tests/ui-shell.test.ts` enforces this.
+- Fonts: `src/styles/fonts.css` (the Tibetan @font-face, scoped to U+0F00-0FFF) and `src/styles/base.css` (the single
+  `:lang(bo)` block: line-height 1.9, letter-spacing normal, font-synthesis none). Font provenance: `public/fonts/SOURCE.md`.
+- The position comes from engine ticks (clock-derived). Nothing reads `audio.currentTime` for display.

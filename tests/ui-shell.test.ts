@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 import { brotliDecompressSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import type { Manifest } from '../src/core/types';
@@ -359,5 +359,22 @@ describe('DOM writes stay in src/ui and use textContent', () => {
 
   it('the devHarness is removed', () => {
     expect(existsSync('src/ui/devHarness.ts')).toBe(false);
+  });
+});
+
+describe('one writer for <html lang>', () => {
+  function listFiles(dir: string): string[] {
+    return readdirSync(dir).flatMap((name) => {
+      const p = join(dir, name);
+      return statSync(p).isDirectory() ? listFiles(p) : [p];
+    });
+  }
+
+  it('only src/ui/locale.ts assigns document.documentElement.lang (the applier)', () => {
+    const writers = listFiles('src')
+      .filter((f) => f.endsWith('.ts'))
+      .filter((f) => /documentElement\.lang\s*=/.test(readFileSync(f, 'utf8')))
+      .map((f) => f.split(sep).join('/'));
+    expect(writers).toEqual(['src/ui/locale.ts']);
   });
 });
