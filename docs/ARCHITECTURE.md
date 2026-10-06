@@ -57,6 +57,7 @@ This records decisions already agreed. Change them only with Kunshe's approval, 
 
 **Rules**
 - **Reload cap:** `MAX_RELOADS = 3`. Reloads count from any trigger (metadata, tick, `onVisible`, `ended`, retry). The count resets when the element reaches `playing`. The next reload enters `error`.
+- **Drift correction:** on each transition to `playing` (including a buffering recovery), if `|actual − expected| > 0.75 s`, seek to the clock-derived position. At most 3 corrections per play session; the 4th is skipped and recorded as a cap-hit. No correction runs while `loading` or `buffering`. Correction runs only at transitions to `playing`; it does not run on every tick.
 - **Tick** runs in `playing` and `buffering`, so a boundary crossed during a stall is still caught.
 - **Stale callbacks:** every load bumps a token. A late `loadedmetadata`, retry timer or play rejection is ignored once the user has paused or the load has been replaced.
 

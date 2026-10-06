@@ -65,6 +65,10 @@ The agent updates this file at the end of every task. Newest notes at the bottom
   reload the ended track.
 - M3 float finding: `211.255167 s` in ms resolves to `211.2551669921875`, just under the boundary. The clock-lag path
   covers this with a timer of about 0 ms, so a boundary that is a few microseconds away is not a bug.
+- M3 drift correction (added after the first manual test: the late joiner landed seconds off): on each transition to
+  `playing`, seek when |drift| > 0.75 s; max 3 per play session, then cap-hit recorded. The dev harness shows a 1 s debug
+  readout (expected vs actual, drift, el.duration vs manifest, corrections). **Not verified:** the fix itself. Retest is
+  pending in two Chrome windows. Known gap: no correction runs during smooth playback between transitions.
 - M3 not verified here: two-tab sync, and leaving a tab paused for a minute then rejoining. These need two real browser
   tabs and real time.
 - [HUMAN] iPhone check (Kunshe): run `npm run dev -- --host` on the local network and confirm the first tap plays on
