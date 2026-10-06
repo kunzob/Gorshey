@@ -8,7 +8,10 @@ async function boot(): Promise<void> {
   await measureOffset();
   const manifest = await loadManifest('/manifest.json');
   const engine = new AudioEngine(manifest, { now });
-  mountDevHarness(engine);
+  mountDevHarness(
+    engine,
+    manifest.tracks.map((t) => t.duration),
+  );
 }
 
 void boot();
