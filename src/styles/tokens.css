@@ -11,7 +11,8 @@
   --space-gap: 8px;
   --touch: 48px;
   --max-width: 460px;
-  --ring-size: min(78vw, 36dvh, 360px); /* from height as well as width */
+  /* Ring diameter: the width-based size, but never more than the height left after the other rows (about 430 px, which leaves room for a two-line next-up). */
+  --ring-size: clamp(160px, calc(100dvh - 430px), min(78vw, 360px));
 }
 
 /* Light-mode slots are defined but not enabled (ARCHITECTURE §7). */

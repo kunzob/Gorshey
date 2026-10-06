@@ -108,7 +108,8 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - Size-adjust values (100% Tibetan, 125% fallback) are starting points; tune in M10.
 
 ## Open for M5
-- [HUMAN] Visual check at phone width in Chrome: layout, the kora ring, and the touch targets.
+- [HUMAN] Visual check at phone width in Chrome: layout, the kora ring, and the touch targets. (Round 4 measured
+  375x667 in both languages in headless Chrome; the human recheck is still required.)
 - [HUMAN] Tibetan rendering check: no clipped or overlapping stacks in the title, subtitle or brand mark.
 - [HUMAN] CLS check when the Tibetan web font swaps in (Performance panel, CLS about 0).
 - DOM tests: `tests/render.test.ts` uses happy-dom 20.14.5 (pinned, devDependency, per-file docblock). 17 tests pass.
@@ -137,3 +138,7 @@ The agent updates this file at the end of every task. Newest notes at the bottom
   Tibetan check had forced into the catalog. Removed.
 - [HUMAN] Re-check at phone width in Chrome: the page fits one viewport in both languages (no scroll), and the play
   button and next-up line are visible without scrolling. Layout is not measured in tests.
+
+## M10 checklist additions
+- [ ] Lighthouse CLS check on the production build (mobile emulation), with the Tibetan web font swapping in. Target: CLS ≈ 0.
+- [ ] Layout at 375x667 in both languages: no page scroll, play button and next-up line fully visible (round 4 check).

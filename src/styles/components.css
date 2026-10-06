@@ -134,6 +134,22 @@
   min-height: calc(2 * 1.9em);
 }
 
+/* Short phones (375x667 and smaller): tighter rows so the play button and next-up line stay on screen. */
+@media (max-height: 700px) {
+  .player {
+    gap: 4px;
+  }
+
+  .title {
+    font-size: 1.25rem;
+    min-height: 1.9em;
+  }
+
+  .nextup {
+    font-size: 0.9rem;
+  }
+}
+
 .status[aria-live] {
   min-height: 1.5em;
 }
