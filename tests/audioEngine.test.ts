@@ -117,9 +117,9 @@ interface Harness {
   ticks: Array<{ trackIdx: number; positionSec: number }>;
 }
 
-function setup(manifest: Manifest = REAL_MANIFEST, startMs = EPOCH_MS): Harness {
+function setup(manifest: Manifest = REAL_MANIFEST, startMs = EPOCH_MS, refined = false): Harness {
   const el = new FakeAudio();
-  const clock = { t: startMs, now: () => clock.t };
+  const clock = { t: startMs, now: () => clock.t, isRefined: () => refined };
   const engine = new AudioEngine(manifest, clock as Clock, el as unknown as HTMLAudioElement);
   const states: EngineState[] = [];
   const tracks: number[] = [];
@@ -709,5 +709,53 @@ describe('AudioEngine: drift correction while playing', () => {
     expect(snap.expectedSec).toBeCloseTo(52, 6);
     expect(snap.actualSec).toBeCloseTo(50, 6);
     expect(snap.driftSec).toBeCloseTo(-2, 6);
+  });
+});
+
+describe('AudioEngine: refinement re-sync and drift threshold', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('re-syncs once when refinement moves the position by more than 0.3 s, through resolve()', () => {
+    const h = setup(REAL_MANIFEST, EPOCH_MS + 50 * SEC);
+    startPlaying(h);
+    h.clock.t += 400; // the refined offset is now 0.4 s larger
+    h.engine.onClockRefined(0.4);
+    expect(h.el.currentTime).toBeCloseTo(50.4, 6);
+  });
+
+  it('does nothing when refinement moves the position by 0.3 s or less', () => {
+    const h = setup(REAL_MANIFEST, EPOCH_MS + 50 * SEC);
+    startPlaying(h);
+    h.clock.t += 200;
+    h.engine.onClockRefined(0.2);
+    expect(h.el.currentTime).toBeCloseTo(50, 6);
+  });
+
+  it('does nothing when not playing (the next transition to playing corrects it)', () => {
+    const h = setup(REAL_MANIFEST, EPOCH_MS + 50 * SEC);
+    h.engine.play();
+    h.el.loadMetadata();
+    h.engine.onClockRefined(0.9);
+    expect(h.el.currentTime).toBeCloseTo(50, 6);
+  });
+
+  it('once refined, drift above 0.3 s is corrected on a transition to playing', () => {
+    const h = setup(REAL_MANIFEST, EPOCH_MS + 50 * SEC, true);
+    startPlaying(h);
+    h.el.fire('waiting');
+    h.clock.t += 500; // 0.5 s drift: above 0.3, below 0.75
+    h.el.fire('playing');
+    expect(h.engine.debugSnapshot().corrections).toBe(1);
+    expect(h.el.currentTime).toBeCloseTo(50.5, 6);
+  });
+
+  it('while only coarse, drift of 0.5 s is left alone (threshold stays 0.75 s)', () => {
+    const h = setup(REAL_MANIFEST, EPOCH_MS + 50 * SEC, false);
+    startPlaying(h);
+    h.el.fire('waiting');
+    h.clock.t += 500;
+    h.el.fire('playing');
+    expect(h.engine.debugSnapshot().corrections).toBe(0);
   });
 });

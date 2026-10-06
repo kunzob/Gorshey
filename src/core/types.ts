@@ -27,4 +27,6 @@ export interface Manifest {
 /** Anything that can report the corrected current time in ms (clock.now satisfies this). */
 export interface Clock {
   now(): number;
+  /** True once the offset is refined (second-boundary); drives the drift threshold. */
+  isRefined?(): boolean;
 }

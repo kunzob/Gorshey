@@ -32,7 +32,9 @@ const TICK_MS = 250;
 const DRIFT_TOLERANCE_S = 2;
 const RETRY_DELAY_MS = 3000;
 const MAX_RELOADS = 3; // reloads allowed without reaching playing; the next one enters error
-const DRIFT_CORRECT_S = 0.75; // drift beyond this, checked on each transition to playing, is corrected
+const DRIFT_COARSE_S = 0.75; // drift threshold while the clock offset is coarse (1 s Date header)
+const DRIFT_REFINED_S = 0.3; // drift threshold once the offset is refined
+const RESYNC_AFTER_REFINE_S = 0.3; // a refinement that moves the position more than this re-syncs once
 const MAX_CORRECTIONS = 3; // per play session
 
 /**
@@ -104,6 +106,21 @@ export class AudioEngine {
     this.clearTimers();
     this.el.pause();
     this.setState('paused');
+  }
+
+  /**
+   * Called once when the clock offset is refined. `deltaSec` is how far the offset moved. A move above
+   * 0.3 s re-syncs while playing, through resolve(). It does not use up the drift-correction cap.
+   */
+  onClockRefined(deltaSec: number): void {
+    if (Math.abs(deltaSec) <= RESYNC_AFTER_REFINE_S) return;
+    if (!this.wantPlaying || this.status !== 'playing') return;
+    const pos = this.locate();
+    if (pos.trackIdx !== this.currentIdx) {
+      this.startLoad();
+      return;
+    }
+    this.el.currentTime = pos.offsetSec;
   }
 
   /** Call on visibilitychange to visible. Re-syncs if the track changed or the element drifted. */
@@ -220,8 +237,9 @@ export class AudioEngine {
       this.startLoad();
       return;
     }
+    const threshold = this.clock.isRefined?.() ? DRIFT_REFINED_S : DRIFT_COARSE_S;
     const drift = this.el.currentTime - pos.offsetSec;
-    if (Math.abs(drift) <= DRIFT_CORRECT_S) return;
+    if (Math.abs(drift) <= threshold) return;
     if (this.corrections >= MAX_CORRECTIONS) {
       this.capHit = true;
       return;

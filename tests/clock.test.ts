@@ -1,5 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { isSynced, measureOffset, now, resetClock, setOffset, shouldRemeasure } from '../src/core/clock';
+import {
+  getOffset,
+  isSynced,
+  measureOffset,
+  now,
+  onOffsetChange,
+  refineOffset,
+  resetClock,
+  setOffset,
+  shouldRemeasure,
+  syncPrecision,
+} from '../src/core/clock';
 
 const DATE_HEADER = 'Thu, 01 Jan 2026 00:00:00 GMT';
 const SERVER_MS = Date.parse(DATE_HEADER); // whole-second instant, as the Date header carries
@@ -167,5 +178,137 @@ describe('shouldRemeasure', () => {
 
   it('is true once more than 10 minutes have passed', () => {
     expect(shouldRemeasure(0, TEN_MIN + 1)).toBe(true);
+  });
+});
+
+// ---- second-boundary refinement ----------------------------------------------------------
+// Fake world: the device clock reads world.now; the server clock is SERVER_AHEAD ms ahead of it.
+// The server stamps each Date header with the whole second its clock is in, as real servers do.
+const BASE = Date.parse('Thu, 01 Jan 2026 00:00:00 GMT');
+const SERVER_AHEAD = 2345;
+const world = { now: BASE };
+
+// Header text for an instant that is a whole second after BASE (under an hour; the fake runs ~30 s).
+function headerFor(ms: number): string {
+  const k = Math.round((ms - BASE) / 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `Thu, 01 Jan 2026 00:${pad(Math.floor(k / 60))}:${pad(k % 60)} GMT`;
+}
+
+// One-way latencies per request (3..7 ms each leg): RTT jitter between 6 and 14 ms.
+function legs(i: number): [number, number] {
+  return [3 + ((i * 7) % 5), 3 + ((i * 3) % 5)];
+}
+
+function serverFetch(opts: { stuck?: boolean } = {}) {
+  let i = 0;
+  const fetchFn = vi.fn(async () => {
+    const [out, back] = legs(i++);
+    world.now += out;
+    const serverMs = world.now + SERVER_AHEAD;
+    const header = opts.stuck ? headerFor(BASE) : headerFor(Math.floor(serverMs / 1000) * 1000);
+    world.now += back;
+    return { headers: { get: (name: string) => (name.toLowerCase() === 'date' ? header : null) } };
+  });
+  return fetchFn;
+}
+
+const sleep = async (ms: number) => {
+  world.now += ms;
+};
+
+describe('refineOffset: second-boundary measurement', () => {
+  beforeEach(() => {
+    world.now = BASE;
+    resetClock();
+    vi.spyOn(Date, 'now').mockImplementation(() => world.now);
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it('recovers the offset within 100 ms across 20 phases within the second, with RTT jitter', async () => {
+    for (let k = 0; k < 20; k++) {
+      resetClock();
+      world.now = BASE + k * 50; // a different phase of the server second each time
+      const result = await refineOffset({ fetchFn: serverFetch(), sleep });
+      expect(result.refined).toBe(true);
+      expect(Math.abs(getOffset() - SERVER_AHEAD)).toBeLessThan(100);
+      expect(syncPrecision()).toBe('refined');
+    }
+  });
+
+  it('with no second tick observed in the budget, keeps the coarse offset and says so', async () => {
+    const coarse = await measureOffset(1, serverFetch());
+    expect(syncPrecision()).toBe('coarse');
+    const result = await refineOffset({ fetchFn: serverFetch({ stuck: true }), sleep });
+    expect(result.refined).toBe(false);
+    expect(getOffset()).toBe(coarse);
+    expect(syncPrecision()).toBe('coarse');
+  });
+
+  it('request budget: at most 25 requests by default', async () => {
+    const fetchFn = serverFetch({ stuck: true });
+    await refineOffset({ fetchFn, sleep });
+    expect(fetchFn).toHaveBeenCalledTimes(25);
+  });
+
+  it('time budget: stops at about 3 s even when more requests are allowed', async () => {
+    const start = world.now;
+    const fetchFn = serverFetch({ stuck: true });
+    await refineOffset({ fetchFn, sleep, maxRequests: 1000 });
+    expect(world.now - start).toBeLessThanOrEqual(3200);
+    expect(fetchFn.mock.calls.length).toBeLessThanOrEqual(31);
+  });
+
+  it('notifies listeners once with the previous and new offset when refinement lands', async () => {
+    const seen: Array<{ previousOffset: number; offset: number }> = [];
+    const off = onOffsetChange((c) => seen.push({ previousOffset: c.previousOffset, offset: c.offset }));
+    await refineOffset({ fetchFn: serverFetch(), sleep });
+    expect(seen).toHaveLength(1);
+    expect(seen[0]!.previousOffset).toBe(0);
+    expect(Math.abs(seen[0]!.offset - SERVER_AHEAD)).toBeLessThan(100);
+    off();
+  });
+
+  it('does not notify listeners when nothing was refined', async () => {
+    const seen: number[] = [];
+    const off = onOffsetChange(() => seen.push(1));
+    await refineOffset({ fetchFn: serverFetch({ stuck: true }), sleep });
+    expect(seen).toHaveLength(0);
+    off();
+  });
+});
+
+describe('refineOffset: failed samples and defaults', () => {
+  beforeEach(() => {
+    world.now = BASE;
+    resetClock();
+    vi.spyOn(Date, 'now').mockImplementation(() => world.now);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('a rejected request or a response with no Date is skipped; refinement still lands', async () => {
+    const good = serverFetch();
+    let n = 0;
+    const fetchFn = vi.fn(async (url: string, init: { method: string; cache: RequestCache }) => {
+      const k = n++;
+      if (k % 6 === 2) throw new TypeError('network down');
+      if (k % 6 === 4) return { headers: { get: () => null } };
+      void url;
+      void init;
+      return good();
+    });
+    const result = await refineOffset({ fetchFn, sleep });
+    expect(result.refined).toBe(true);
+    expect(Math.abs(getOffset() - SERVER_AHEAD)).toBeLessThan(100);
+  });
+
+  it('with no injected fetch or sleep, it uses the global fetch and a real timer', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ headers: { get: () => headerFor(BASE) } })));
+    const result = await refineOffset({ maxRequests: 3, intervalMs: 1 });
+    expect(result.refined).toBe(false); // a stuck header never ticks, so the coarse offset is kept
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(3);
   });
 });
