@@ -1,0 +1,35 @@
+{
+  "version": "5166db301c24",
+  "epoch": "2026-01-01T00:00:00Z",
+  "totalDuration": 456.434688,
+  "tracks": [
+    {
+      "id": "bd4e9fd47041",
+      "title": {
+        "bo": "མ་ནི་ཡིག་དྲུག",
+        "en": "Song of Mani"
+      },
+      "artist": {
+        "bo": "མིང་མེད",
+        "en": "Unknown"
+      },
+      "duration": 211.255167,
+      "src": "https://nfkubphegarcrznwjdlb.supabase.co/storage/v1/object/public/gorshey-media/audio/bd4e9fd47041.mp3",
+      "artwork": "https://nfkubphegarcrznwjdlb.supabase.co/storage/v1/object/public/gorshey-media/art/3782c52345aa.jpg"
+    },
+    {
+      "id": "283d75d6d29d",
+      "title": {
+        "bo": "རྟེན་འབྲེལ་དགའ་བསྲུ།",
+        "en": "Auspicious Welcome"
+      },
+      "artist": {
+        "bo": "མིང་མེད",
+        "en": "Unknown"
+      },
+      "duration": 245.179521,
+      "src": "https://nfkubphegarcrznwjdlb.supabase.co/storage/v1/object/public/gorshey-media/audio/283d75d6d29d.mp3",
+      "artwork": "https://nfkubphegarcrznwjdlb.supabase.co/storage/v1/object/public/gorshey-media/art/3782c52345aa.jpg"
+    }
+  ]
+}
