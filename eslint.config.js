@@ -34,6 +34,13 @@ export default tseslint.config(
     },
   },
   {
+    // The one DOM-level test file exercises src/ui from a happy-dom environment.
+    files: ['tests/render.test.ts'],
+    rules: {
+      'no-restricted-globals': 'off',
+    },
+  },
+  {
     // Catalog and manifest strings must go in with textContent, never as markup.
     files: ['src/**/*.ts'],
     rules: {
