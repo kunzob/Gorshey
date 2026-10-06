@@ -1,6 +1,7 @@
 // TEMPORARY dev harness for M3: a play/pause button and a debug readout to exercise AudioEngine by hand.
 // Removed in M5 when the real UI shell lands.
 import type { AudioEngine, DebugSnapshot, EngineState } from '../audio/AudioEngine';
+import { getOffset, syncPrecision } from '../core/clock';
 
 const ACTIVE: EngineState[] = ['loading', 'playing', 'buffering'];
 const READOUT_MS = 1000;
@@ -30,6 +31,7 @@ export function mountDevHarness(
       `drift:           ${sign}${s.driftSec.toFixed(2)} s   (actual - expected)`,
       `duration:        el ${s.elDurationSec.toFixed(3)} s / manifest ${manifestDur?.toFixed(3) ?? '—'} s`,
       `corrections:     ${s.corrections} / 3${s.capHit ? '  CAP HIT' : ''}`,
+      `clock:           ${syncPrecision()}, offset ${getOffset().toFixed(0)} ms`,
     ].join('\n');
   };
 

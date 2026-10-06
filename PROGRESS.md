@@ -69,6 +69,12 @@ The agent updates this file at the end of every task. Newest notes at the bottom
   `playing`, seek when |drift| > 0.75 s; max 3 per play session, then cap-hit recorded. The dev harness shows a 1 s debug
   readout (expected vs actual, drift, el.duration vs manifest, corrections). **Not verified:** the fix itself. Retest is
   pending in two Chrome windows. Known gap: no correction runs during smooth playback between transitions.
+- Sync refinement (after the two-tab failures, which the readout showed are not explained by HTTP caching: the Date header
+  matched local time within 1 s in both windows): the coarse offset stays as before. `refineOffset()` then polls HEAD every
+  100 ms (cache-busted, no-store), up to 25 requests / 3 s, and brackets each server-second tick. Offset = server boundary
+  − local boundary estimate, median over brackets. No tick means the coarse offset is kept, and `syncPrecision()` says so.
+  The engine re-syncs once through resolve() when a refinement moves the position by more than 0.3 s. Drift threshold is 0.3 s
+  once refined, 0.75 s while coarse. **Not verified:** the fix itself; retest in two Chrome windows.
 - M3 not verified here: two-tab sync, and leaving a tab paused for a minute then rejoining. These need two real browser
   tabs and real time.
 - [HUMAN] iPhone check (Kunshe): run `npm run dev -- --host` on the local network and confirm the first tap plays on
