@@ -8,7 +8,8 @@ export type FetchLike = (url: string, init: { method: string; cache: RequestCach
 
 const REMEASURE_AFTER_MS = 10 * 60 * 1000;
 
-const state = { offset: 0 };
+// synced is false until a sample succeeds, so a 0 offset can be told apart from "never measured".
+const state = { offset: 0, synced: false };
 
 /** One HEAD round trip. Returns the offset estimate, or null if the sample is unusable. */
 async function sampleOffset(fetchFn: FetchLike): Promise<number | null> {
@@ -44,11 +45,17 @@ export async function measureOffset(samples = 3, fetchFn: FetchLike = fetch): Pr
     const offset = await sampleOffset(fetchFn);
     if (offset !== null) values.push(offset);
   }
-  state.offset = values.length === 0 ? 0 : median(values);
+  state.synced = values.length > 0;
+  state.offset = state.synced ? median(values) : 0;
   return state.offset;
 }
 
-/** Corrected current time in ms. */
+/** True only when the last measurement had at least one successful sample. */
+export function isSynced(): boolean {
+  return state.synced;
+}
+
+/** Corrected current time in ms. Before a successful sync this is the device clock. */
 export function now(): number {
   return Date.now() + state.offset;
 }
@@ -56,6 +63,12 @@ export function now(): number {
 /** Test hook: overrides the stored offset. */
 export function setOffset(ms: number): void {
   state.offset = ms;
+}
+
+/** Test hook: back to the initial unsynced state. */
+export function resetClock(): void {
+  state.offset = 0;
+  state.synced = false;
 }
 
 /** True when more than 10 minutes passed since the last measurement. */

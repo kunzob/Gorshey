@@ -50,7 +50,9 @@ The agent updates this file at the end of every task. Newest notes at the bottom
   245.179521, total 456.434688), not a read of public/manifest.json.
 - M2 choices: `measureOffset` drops failed samples and takes the median of the rest; it returns 0 only when all fail.
   `buildIndex` throws on an empty playlist. `parseManifest` also returns `epochMs`. Track `artwork` is optional.
-  Duplicate track ids are not rejected (not in spec).
+  `parseManifest` rejects duplicate track ids (the second occurrence is named in the error).
+- `isSynced()` is false until a sample succeeds. When every sample fails, `measureOffset` returns 0 and `isSynced()`
+  stays false, so callers can tell "measured 0" from "not measured". `resetClock()` is a test hook.
 - Coverage: `@vitest/coverage-v8` 5.0.3 (matches vitest 5, dev only), `npm run test:coverage`. Threshold is 100%
   branches on `src/core/**` only. `coverage/` is gitignored.
 - Lint and build now type-check with `noUncheckedIndexedAccess`; index access in core uses `as number` with a comment.

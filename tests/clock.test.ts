@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { measureOffset, now, setOffset, shouldRemeasure } from '../src/core/clock';
+import { isSynced, measureOffset, now, resetClock, setOffset, shouldRemeasure } from '../src/core/clock';
 
 const DATE_HEADER = 'Thu, 01 Jan 2026 00:00:00 GMT';
 const SERVER_MS = Date.parse(DATE_HEADER); // whole-second instant, as the Date header carries
@@ -40,6 +40,46 @@ function scriptedClock(samples: Sample[]) {
   });
   return { fetchFn, nowSpy };
 }
+
+describe('clock sync flag', () => {
+  beforeEach(() => resetClock());
+  afterEach(() => vi.restoreAllMocks());
+
+  it('is false before any measurement', () => {
+    expect(isSynced()).toBe(false);
+  });
+
+  it('stays false when every sample fails, so callers can tell "measured 0" from "not measured"', async () => {
+    const { fetchFn } = scriptedClock([rejectSample(), nodateSample()]);
+    expect(await measureOffset(2, fetchFn)).toBe(0);
+    expect(isSynced()).toBe(false);
+  });
+
+  it('becomes true after at least one successful sample', async () => {
+    const { fetchFn } = scriptedClock([rejectSample(), okSample(0)]);
+    await measureOffset(2, fetchFn);
+    expect(isSynced()).toBe(true);
+  });
+
+  it('a later total failure clears a previous sync', async () => {
+    const first = scriptedClock([okSample(50)]);
+    await measureOffset(1, first.fetchFn);
+    expect(isSynced()).toBe(true);
+    vi.restoreAllMocks();
+    const second = scriptedClock([rejectSample()]);
+    await measureOffset(1, second.fetchFn);
+    expect(isSynced()).toBe(false);
+  });
+
+  it('resetClock() returns to unsynced with offset 0', async () => {
+    const { fetchFn } = scriptedClock([okSample(50)]);
+    await measureOffset(1, fetchFn);
+    resetClock();
+    expect(isSynced()).toBe(false);
+    vi.spyOn(Date, 'now').mockReturnValue(1000);
+    expect(now()).toBe(1000);
+  });
+});
 
 describe('clock offset', () => {
   beforeEach(() => setOffset(0));
