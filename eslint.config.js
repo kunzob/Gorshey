@@ -34,6 +34,18 @@ export default tseslint.config(
     },
   },
   {
+    // Catalog and manifest strings must go in with textContent, never as markup.
+    files: ['src/**/*.ts'],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        { property: 'innerHTML', message: 'Use textContent; never write markup from strings.' },
+        { property: 'outerHTML', message: 'Use textContent; never write markup from strings.' },
+        { property: 'insertAdjacentHTML', message: 'Use textContent; never write markup from strings.' },
+      ],
+    },
+  },
+  {
     files: ['src/core/clock.ts'],
     rules: {
       'no-restricted-syntax': 'off',

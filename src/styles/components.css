@@ -1,0 +1,122 @@
+/* Functional layout for the player shell. */
+.player {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+/* Every interactive target: at least 48 px, with at least 8 px between targets (.controls and .top). */
+.touch {
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-maroon);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-whitewash);
+  font: inherit;
+  cursor: pointer;
+}
+
+.touch:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+.top,
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-maroon);
+}
+
+/* Kora ring: the circle is rotated so progress starts at 12 o'clock and runs clockwise. */
+.art {
+  position: relative;
+  width: var(--ring-size);
+  height: var(--ring-size);
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ring-track {
+  fill: none;
+  stroke: var(--color-maroon);
+  stroke-opacity: 0.35;
+  stroke-width: 3;
+}
+
+.ring-fill {
+  fill: none;
+  stroke: var(--color-gold);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.artwork {
+  position: absolute;
+  inset: 8%;
+  width: 84%;
+  height: 84%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.eyebrow,
+.subtitle,
+.artist,
+.position,
+.nextup,
+.status,
+.update {
+  margin: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+  min-height: calc(2 * 1.9em);
+}
+
+.status[aria-live] {
+  min-height: 1.5em;
+}
+
+.update[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

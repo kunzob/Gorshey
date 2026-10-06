@@ -1,0 +1,22 @@
+/* Potala night tokens (ARCHITECTURE §7). Functional values only; theme polish comes later. */
+:root {
+  --color-night: #0d0f14;
+  --color-whitewash: #f2ede4;
+  --color-maroon: #8a7370;
+  --color-gold: #c9a24a; /* active states only */
+
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --touch: 48px;
+  --max-width: 460px;
+  --ring-size: min(78vw, 360px);
+}
+
+/* Light-mode slots are defined but not enabled (ARCHITECTURE §7). */
+:root[data-theme="light"] {
+  --color-night: #f2ede4;
+  --color-whitewash: #0d0f14;
+  --color-maroon: #6b4f4b;
+  --color-gold: #9a7420;
+}

@@ -9,7 +9,7 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [x] M2  Sync core (clock + schedule)
 - [x] M3  Audio engine
 - [x] M4  i18n (bo / en)
-- [ ] M5  UI shell (Potala theme, kora ring)
+- [ ] M5  UI shell (Potala theme, kora ring): built, DOM-level tests pending a DOM-library approval (see follow-ups)
 - [ ] M6  Presence (Supabase)
 - [ ] M7  Media Session
 - [ ] M8  PWA (manifest + service worker)
@@ -94,3 +94,24 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - Licensing of tracks: deferred by Kunshe; manifest stays source-agnostic.
 - npm allow-scripts: decide whether to approve esbuild's postinstall (build works without it).
 - Native-speaker review of Tibetan UI strings before launch.
+
+## M5 notes
+- Built: `src/ui/render.ts` (only DOM writer; textContent and lang spans), `view.ts` (pure view logic), `KoraRing.ts`,
+  `ClockView.ts`, `LocaleToggle.ts`, `visibility.ts`, `dom.ts`. `devHarness.ts` and `tibetan.css` removed (merged into
+  `base.css` and `fonts.css`). `main.ts` disposes the engine on hot reload.
+- Tests: `tests/ui-shell.test.ts` covers the view logic, CSS and HTML rules, the font's hash and coverage, and a static
+  check that src/ui never uses innerHTML. Still missing: DOM-behaviour tests for render.ts (needs happy-dom or jsdom).
+- Font: Noto Serif Tibetan (SIL OFL 1.1) instead of Jomolhari, because the official Google Fonts source delivers a
+  WOFF2 Tibetan subset and Jomolhari has no official WOFF2 source. Source and hashes: `public/fonts/SOURCE.md`.
+  Coverage: every assigned code point in U+0F00-0FFF (test). No conversion or subsetting by us.
+- Eyebrow template uses the Tibetan shad (།) as separator in bo, because check-tibetan requires Tibetan in every bo value.
+- Size-adjust values (100% Tibetan, 125% fallback) are starting points; tune in M10.
+
+## Open for M5
+- [HUMAN] Visual check at phone width in Chrome: layout, the kora ring, and the touch targets.
+- [HUMAN] Tibetan rendering check: no clipped or overlapping stacks in the title, subtitle or brand mark.
+- [HUMAN] CLS check when the Tibetan web font swaps in (Performance panel, CLS about 0).
+- Needs your approval: a DOM test library (happy-dom recommended) for the render.ts behaviour tests.
+- Tibetan precache for M8: `/fonts/NotoSerifTibetan-tibetan-subset.woff2` and `/fonts/OFL.txt` belong in the precache
+  list (the page preloads the font on every load, so it is always needed).
+- Native review: 14 bo strings are unreviewed (`npm run i18n:review`).

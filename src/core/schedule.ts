@@ -28,3 +28,12 @@ export function resolve(nowMs: number, epochMs: number, starts: number[]): Posit
   const endsAtMs = nowMs + ((starts[lo + 1] as number) - loopPos) * 1000;
   return { trackIdx: lo, offsetSec, endsAtMs };
 }
+
+/**
+ * Index of the track that follows the one playing now (display only, never used to advance playback).
+ * Resolves one millisecond past the end of the current track, so the last track wraps to track 0.
+ */
+export function nextTrackIdx(nowMs: number, epochMs: number, starts: number[]): number {
+  const current = resolve(nowMs, epochMs, starts);
+  return resolve(current.endsAtMs + 1, epochMs, starts).trackIdx;
+}

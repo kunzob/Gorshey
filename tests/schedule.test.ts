@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildIndex, resolve } from '../src/core/schedule';
+import { buildIndex, nextTrackIdx, resolve } from '../src/core/schedule';
 
 // Exact durations from public/manifest.json (hardcoded on purpose: adding a track later must not change these asserts).
 const REAL_DURATIONS = [211.255167, 245.179521];
@@ -89,5 +89,31 @@ describe('resolve', () => {
     const pos = resolve(EPOCH + (REAL_TOTAL + 10) * 1000, EPOCH, starts);
     expect(pos.trackIdx).toBe(0);
     expect(pos.offsetSec).toBeCloseTo(10, 6);
+  });
+});
+
+describe('nextTrackIdx (display only: resolve(end of current track + 1 ms))', () => {
+  const realStarts = buildIndex(REAL_DURATIONS.map((duration) => ({ duration })));
+
+  it('mid-track: the next track is the following index', () => {
+    expect(nextTrackIdx(EPOCH + 50_000, EPOCH, realStarts)).toBe(1);
+  });
+
+  it('last track wraps to the first track (last-to-first wraparound)', () => {
+    expect(nextTrackIdx(EPOCH + 300_000, EPOCH, realStarts)).toBe(0);
+  });
+
+  it('wraparound also holds in a later loop', () => {
+    expect(nextTrackIdx(EPOCH + (REAL_TOTAL + 300) * 1000, EPOCH, realStarts)).toBe(0);
+  });
+
+  it('single-track playlist: next is track 0 again', () => {
+    expect(nextTrackIdx(EPOCH + 3000, EPOCH, buildIndex([{ duration: 10 }]))).toBe(0);
+  });
+
+  it('exactly on a boundary: next is the track after that boundary', () => {
+    const starts = buildIndex([{ duration: 2 }, { duration: 3 }]);
+    expect(nextTrackIdx(EPOCH + 2000, EPOCH, starts)).toBe(0); // boundary of track 1 → next is track 0
+    expect(nextTrackIdx(EPOCH, EPOCH, starts)).toBe(1); // track 0 at its start → next is track 1
   });
 });

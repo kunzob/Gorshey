@@ -2,10 +2,15 @@
   "station.name": "Gorshey · སྒོར་གཞས།",
   "player.play": "འགོ་འཛུགས།",
   "player.pause": "འགོག་པ།",
-  "player.live": "ཐད་ཀར།",
+  "player.live": "ཐད་ཀར་ཡོད།",
   "badge.listeners": "སྒོར་ལ་ {n} ཡོད།",
   "player.nowPlaying": "ད་ལྟ་བསྒྲག་བཞིན་ཡོད།",
-  "player.nextUp": "ཤུལ་མ།",
+  "player.nextUp": "ཤུལ་མ་:",
   "player.error": "ནོར་འཁྲུལ་ཡོད།",
-  "player.offline": "དྲ་ཐག་མེད།"
+  "player.offline": "དྲ་ཐག་མེད།",
+  "place.marpoRi": "མར་པོ་རི།",
+  "eyebrow.line": "{live} ། {place}",
+  "player.buffering": "སྒྲིག་བཞིན་ཡོད།…",
+  "player.positionEmpty": "ཚོད་མེད།",
+  "update.available": "གསར་བཅོས་ཡོད།"
 }

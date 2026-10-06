@@ -83,7 +83,7 @@ describe('catalogs', () => {
   });
 
   it('the :lang(bo) rules are in src/styles with line-height ≥ 1.9 and letter-spacing normal', () => {
-    const css = readFileSync('src/styles/tibetan.css', 'utf8');
+    const css = readFileSync('src/styles/base.css', 'utf8');
     expect(css).toMatch(/:lang\(bo\)\s*\{[^}]*\}/);
     const block = css.match(/:lang\(bo\)\s*\{([^}]*)\}/)![1]!;
     const lh = Number(block.match(/line-height:\s*([\d.]+)/)![1]);

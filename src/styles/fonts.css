@@ -1,0 +1,19 @@
+/* Self-hosted Tibetan web font (see public/fonts/SOURCE.md). Used only for Tibetan text: unicode-range keeps
+   English-only views from downloading it, though the page preloads it on every load. */
+@font-face {
+  font-family: "Gorshey Tibetan";
+  src: url('/fonts/NotoSerifTibetan-tibetan-subset.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  unicode-range: U+0F00-0FFF;
+  font-display: swap;
+  size-adjust: 100%; /* tune by eye in M10 (fonts.md starting points were for Jomolhari) */
+}
+
+/* System fallbacks, so the swap does not jump while the web font loads. */
+@font-face {
+  font-family: "Gorshey Tibetan Fallback";
+  src: local("Kailasa"), local("Microsoft Himalaya"), local("Tibetan Machine Uni");
+  unicode-range: U+0F00-0FFF;
+  size-adjust: 125%; /* Microsoft Himalaya renders small; tune in M10 */
+}

@@ -3,9 +3,42 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0d0f14" />
     <title>Gorshey</title>
+    <link rel="preload" href="/fonts/NotoSerifTibetan-tibetan-subset.woff2" as="font" type="font/woff2" crossorigin>
   </head>
   <body>
+    <main class="player">
+      <header class="top">
+        <p class="badge"><span class="dot" aria-hidden="true"></span><span id="badge">—</span></p>
+        <time id="clock" class="clock">—</time>
+        <button id="locale" class="touch" type="button">—</button>
+      </header>
+
+      <h1 id="station" class="station">—</h1>
+
+      <div class="art">
+        <svg class="ring" aria-hidden="true" viewBox="0 0 100 100">
+          <circle class="ring-track" cx="50" cy="50" r="45"></circle>
+          <circle id="ring-fill" class="ring-fill" cx="50" cy="50" r="45"></circle>
+        </svg>
+        <img id="artwork" class="artwork" alt="" />
+      </div>
+
+      <p id="eyebrow" class="eyebrow">—</p>
+      <p id="title" class="title" lang="bo">—</p>
+      <p id="subtitle" class="subtitle">—</p>
+      <p id="artist" class="artist">—</p>
+      <p id="position" class="position">—</p>
+
+      <div class="controls">
+        <button id="play" class="touch" type="button">—</button>
+      </div>
+
+      <p id="nextup" class="nextup">—</p>
+      <p id="status" class="status" aria-live="polite"></p>
+      <p id="update" class="update" aria-live="polite" hidden></p>
+    </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

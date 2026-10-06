@@ -2,10 +2,15 @@
   "station.name": "Gorshey · སྒོར་གཞས།",
   "player.play": "Play",
   "player.pause": "Pause",
-  "player.live": "Live",
+  "player.live": "ON AIR",
   "badge.listeners": "{n} on the kora",
   "player.nowPlaying": "Now playing",
-  "player.nextUp": "Next up",
+  "player.nextUp": "Next up:",
   "player.error": "Playback failed. Try again.",
-  "player.offline": "You are offline."
+  "player.offline": "You are offline.",
+  "place.marpoRi": "MARPO RI",
+  "eyebrow.line": "{live} · {place}",
+  "player.buffering": "Buffering…",
+  "player.positionEmpty": "—",
+  "update.available": "A new version is available. Reload when you are ready."
 }
