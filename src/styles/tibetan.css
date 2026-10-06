@@ -1,0 +1,10 @@
+/* Tibetan text rules (gorshey-tibetan skill §2). Applied through :lang(bo) only, never through class names.
+   The @font-face and the font files arrive in M5. Until then the system fallbacks are used. */
+:lang(bo) {
+  font-family: "Gorshey Tibetan", "Jomolhari", "Noto Serif Tibetan", "Kailasa",
+               "Microsoft Himalaya", "Tibetan Machine Uni", serif;
+  line-height: 1.9;
+  letter-spacing: normal;
+  text-transform: none;
+  font-feature-settings: normal;
+}

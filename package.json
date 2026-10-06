@@ -12,7 +12,8 @@
     "lint": "eslint . && tsc --noEmit",
     "manifest": "tsx tools/run-manifest.ts && node .claude/skills/gorshey-tibetan/scripts/check-tibetan.mjs public/manifest.json",
     "e2e": "echo \"e2e not configured until M10\" && exit 0",
-    "upload": "tsx tools/upload-media.ts"
+    "upload": "tsx tools/upload-media.ts",
+    "i18n:review": "tsx tools/i18n-review.ts"
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.117.2",

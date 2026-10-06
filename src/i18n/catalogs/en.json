@@ -1,0 +1,11 @@
+{
+  "station.name": "Gorshey · སྒོར་གཞས།",
+  "player.play": "Play",
+  "player.pause": "Pause",
+  "player.live": "Live",
+  "badge.listeners": "{n} on the kora",
+  "player.nowPlaying": "Now playing",
+  "player.nextUp": "Next up",
+  "player.error": "Playback failed. Try again.",
+  "player.offline": "You are offline."
+}
