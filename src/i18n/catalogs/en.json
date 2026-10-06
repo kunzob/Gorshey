@@ -11,6 +11,6 @@
   "place.marpoRi": "MARPO RI",
   "eyebrow.line": "{live} · {place}",
   "player.buffering": "Buffering…",
-  "player.positionEmpty": "—",
-  "update.available": "A new version is available. Reload when you are ready."
+  "update.available": "A new version is available. Reload when you are ready.",
+  "list.separator": " / "
 }

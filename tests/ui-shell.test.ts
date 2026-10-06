@@ -130,8 +130,8 @@ describe('position label', () => {
     expect(positionLabel(72.4, 211.255167, true)).toBe('1:12 / 3:31');
   });
 
-  it('shows the empty-position catalog string when paused or idle', () => {
-    expect(positionLabel(72.4, 211.255167, false)).toBe('—');
+  it('shows nothing when paused or idle (no placeholder text under the artist)', () => {
+    expect(positionLabel(72.4, 211.255167, false)).toBe('');
   });
 });
 
@@ -376,5 +376,38 @@ describe('one writer for <html lang>', () => {
       .filter((f) => /documentElement\.lang\s*=/.test(readFileSync(f, 'utf8')))
       .map((f) => f.split(sep).join('/'));
     expect(writers).toEqual(['src/ui/locale.ts']);
+  });
+});
+
+describe('phone layout and Tibetan typography (visual-bug fixes)', () => {
+  it('the play button is centred: the controls row centres its children', () => {
+    expect(css('src/styles/components.css')).toMatch(/\.controls\s*\{[^}]*justify-content:\s*center/);
+  });
+
+  it('in Tibetan mode the Latin sans stack comes first and no bare serif precedes the Tibetan font', () => {
+    const block = css('src/styles/base.css').match(/:lang\(bo\)\s*\{[^}]*font-family:\s*([^;]+);/);
+    expect(block, ':lang(bo) font-family').not.toBeNull();
+    const families = block![1]!.split(',').map((f) => f.trim().replace(/"/g, ''));
+    expect(['system-ui', 'ui-sans-serif', 'sans-serif']).toContain(families[0]);
+    const tibetan = families.indexOf('Gorshey Tibetan');
+    const bareSerif = families.indexOf('serif');
+    expect(tibetan).toBeGreaterThan(0);
+    expect(bareSerif === -1 || bareSerif > tibetan).toBe(true);
+  });
+
+  it('one Tibetan scale: both Tibetan @font-face rules use size-adjust 120%', () => {
+    const faces = css('src/styles/fonts.css').match(/@font-face\s*\{[^}]*\}/g) ?? [];
+    expect(faces).toHaveLength(2);
+    for (const face of faces) expect(face).toMatch(/size-adjust:\s*120%/);
+  });
+
+  it('Tibetan is scaled through size-adjust, not a per-element font-size', () => {
+    const block = css('src/styles/base.css').match(/:lang\(bo\)\s*\{([^}]*)\}/)![1]!;
+    expect(block).not.toMatch(/font-size/);
+  });
+
+  it('the player fits one viewport: 100dvh, with the ring sized from height as well as width', () => {
+    expect(css('src/styles/components.css')).toMatch(/\.player\s*\{[^}]*min-height:\s*100dvh/);
+    expect(css('src/styles/tokens.css')).toMatch(/--ring-size:[^;]*dvh/);
   });
 });

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AudioEngine, EngineState, TickEvent } from '../src/audio/AudioEngine';
 import type { Manifest } from '../src/core/types';
-import { getLocale, setLocale, setLocaleApplier } from '../src/i18n/i18n';
+import { getLocale, setLocale, setLocaleApplier, t } from '../src/i18n/i18n';
 import { applyDocumentLang } from '../src/ui/locale';
 import { mountPlayer } from '../src/ui/render';
 
@@ -198,7 +198,7 @@ describe('play button and position', () => {
   });
 
   it('shows position over duration with Western digits while active, and the empty string otherwise', () => {
-    expect($('position').textContent).toBe('—');
+    expect($('position').textContent).toBe('');
     ctx.engine.emit('state', 'playing');
     ctx.engine.emit('tick', { trackIdx: 0, positionSec: 72.4 });
     expect($('position').textContent).toBe('1:12 / 3:31');
@@ -237,5 +237,45 @@ describe('unmount', () => {
     ctx.player.unmount();
     ctx.engine.emit('state', 'error');
     expect($('status').textContent).toBe('');
+  });
+});
+
+describe('next-up line separators', () => {
+  it('separates the label from the title, and the Tibetan title from its English subtitle, with a visible separator', () => {
+    ctx.engine.emit('track', 0); // now playing track 0 (EPOCH + 50 s), so next up is track 1
+    expect($('nextup').textContent).toBe('Next up: རྟེན་འབྲེལ་དགའ་བསྲུ། / Auspicious Welcome');
+  });
+
+  it('every run boundary in the next-up line has a separator, not just a space', () => {
+    ctx.engine.emit('track', 0);
+    const runs = [...$('nextup').querySelectorAll('span')].map((s) => s.textContent);
+    expect(runs).toEqual(['Next up:', 'རྟེན་འབྲེལ་དགའ་བསྲུ།', 'Auspicious Welcome']);
+    // The text between the Tibetan run and the English run is the separator.
+    expect($('nextup').textContent!.indexOf('/')).toBeGreaterThan(-1);
+  });
+});
+
+describe('eyebrow comes from the catalogs', () => {
+  it('is built from player.live and place.marpoRi through eyebrow.line, in both languages', () => {
+    expect($('eyebrow').textContent).toBe(t('eyebrow.line', { live: t('player.live'), place: t('place.marpoRi') }));
+    setLocale('bo');
+    expect($('eyebrow').textContent).toBe(t('eyebrow.line', { live: t('player.live'), place: t('place.marpoRi') }));
+    setLocale('en');
+  });
+
+  it('render.ts contains no hard-coded eyebrow copy', () => {
+    const src = readFileSync('src/ui/render.ts', 'utf8');
+    expect(src).not.toMatch(/ON AIR|MARPO RI/);
+  });
+});
+
+describe('language toggle label', () => {
+  it('the label carries its own language, so the Tibetan label gets the Tibetan treatment', () => {
+    expect($('locale').textContent).toBe('བོད་ཡིག');
+    expect($('locale').lang).toBe('bo');
+    setLocale('bo');
+    expect($('locale').textContent).toBe('English');
+    expect($('locale').lang).toBe('en');
+    setLocale('en');
   });
 });

@@ -1,11 +1,18 @@
 /* Functional layout for the player shell. */
 .player {
   max-width: var(--max-width);
+  min-height: 100dvh; /* border-box (base.css): padding stays inside the viewport height */
+  padding:
+    max(var(--space-2), env(safe-area-inset-top))
+    max(var(--space-2), env(safe-area-inset-right))
+    max(var(--space-2), env(safe-area-inset-bottom))
+    max(var(--space-2), env(safe-area-inset-left));
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
+  justify-content: center;
+  gap: var(--space-gap);
   text-align: center;
 }
 
@@ -27,11 +34,18 @@
   outline-offset: 2px;
 }
 
-.top,
-.controls {
+.top {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
   width: 100%;
 }

@@ -11,6 +11,6 @@
   "place.marpoRi": "མར་པོ་རི།",
   "eyebrow.line": "{live} ། {place}",
   "player.buffering": "སྒྲིག་བཞིན་ཡོད།…",
-  "player.positionEmpty": "ཚོད་མེད།",
-  "update.available": "གསར་བཅོས་ཡོད།"
+  "update.available": "གསར་བཅོས་ཡོད།",
+  "list.separator": " ། "
 }

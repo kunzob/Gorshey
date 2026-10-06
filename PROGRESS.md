@@ -116,3 +116,15 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - **M8 (added to docs/tasks/M8-pwa.md):** precache the Tibetan font in the service worker:
   `/fonts/NotoSerifTibetan-tibetan-subset.woff2` and `/fonts/OFL.txt`.
 - Native review: 14 bo strings are unreviewed (`npm run i18n:review`).
+
+## M5 visual fixes (round 2)
+- Fixed: play button centred; next-up runs separated by the catalog separator (`list.separator`, text not a span); the
+  language toggle label carries lang="bo" and gets the Tibetan scale; Latin-first `:lang(bo)` stack (no serif before
+  the Latin sans); one Tibetan scale through `size-adjust: 120%` on both Tibetan faces (per the skill: size via
+  size-adjust, not font-size); `.player` is `min-height: 100dvh` with border-box padding; the ring is sized from height as well as width.
+- Position under the artist: the empty paused state no longer shows text. It was the drafted Tibetan "ཚོད་མེད།",
+  which read as an extra line. Now empty, so nothing shows there when paused.
+- OPEN, artwork not shown: `render.ts` never sets the `<img id="artwork">` source. The manifest URL returns
+  `200 image/jpeg`, so the image would load once wired. Fix not yet applied; awaiting go.
+- [HUMAN] Re-check at phone width in Chrome: the page fits one viewport in both languages (no scroll), and the play
+  button and next-up line are visible without scrolling. Layout is not measured in tests.

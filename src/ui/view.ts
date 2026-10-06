@@ -2,7 +2,7 @@
 import type { EngineState } from '../audio/AudioEngine';
 import { buildIndex, nextTrackIdx } from '../core/schedule';
 import type { Manifest } from '../core/types';
-import { formatDuration, t, titleParts, type LangRun } from '../i18n/i18n';
+import { formatDuration, titleParts, type LangRun } from '../i18n/i18n';
 import type { Locale } from '../i18n/locales';
 
 export const NEXT_UP_TRACK_KEY = 'player.nextUp';
@@ -20,7 +20,7 @@ export const VIEW_KEYS = [
   'eyebrow.line',
   'badge.listeners',
   'player.nextUp',
-  'player.positionEmpty',
+  'list.separator',
   'update.available',
 ];
 
@@ -48,9 +48,9 @@ export function ringDashOffset(circumference: number, fraction: number): number 
   return circumference * (1 - fraction);
 }
 
-/** "m:ss / m:ss" while active; the catalog's empty-position string otherwise. */
+/** "m:ss / m:ss" while active; empty otherwise (no placeholder text under the artist). */
 export function positionLabel(positionSec: number, durationSec: number, active: boolean): string {
-  if (!active) return t('player.positionEmpty');
+  if (!active) return '';
   return `${formatDuration(positionSec)} / ${formatDuration(durationSec)}`;
 }
 

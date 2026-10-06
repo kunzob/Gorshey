@@ -19,6 +19,22 @@ function writeRuns(el: HTMLElement, runs: LangRun[]): void {
   }
 }
 
+/** Next-up line: label, a space, then the title runs joined by the catalog separator (text, not a span). */
+function writeNextUp(el: HTMLElement, label: string, runs: LangRun[], locale: Locale): void {
+  el.textContent = '';
+  const labelSpan = document.createElement('span');
+  labelSpan.lang = locale;
+  labelSpan.textContent = label;
+  el.append(labelSpan, ' ');
+  runs.forEach((run, i) => {
+    if (i > 0) el.append(t('list.separator'));
+    const span = document.createElement('span');
+    span.lang = run.lang;
+    span.textContent = run.text;
+    el.append(span);
+  });
+}
+
 const ACTIVE: EngineState[] = ['loading', 'playing', 'buffering'];
 
 export interface Player {
@@ -52,10 +68,7 @@ export function mountPlayer(opts: {
     writeRuns(r.title, [runs[0]!]);
     writeRuns(r.subtitle, [runs[1]!]);
     r.artist.textContent = artistFor(locale);
-    writeRuns(r.nextup, [
-      { text: t('player.nextUp'), lang: locale },
-      ...nextUpRuns(manifest, now(), locale),
-    ]);
+    writeNextUp(r.nextup, t('player.nextUp'), nextUpRuns(manifest, now(), locale), locale);
   }
 
   function paintPlayer(): void {
@@ -75,6 +88,7 @@ export function mountPlayer(opts: {
     const target = localeToggleTarget(locale);
     r.locale.textContent = target.label;
     r.locale.setAttribute('aria-label', target.label);
+    r.locale.lang = target.code;
     r.eyebrow.textContent = t('eyebrow.line', { live: t('player.live'), place: t('place.marpoRi') });
     r.update.textContent = t('update.available');
     paintTrack(locale);
