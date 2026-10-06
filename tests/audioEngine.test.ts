@@ -600,3 +600,114 @@ describe('AudioEngine: destroy', () => {
     expect(h.states.length + h.ticks.length).toBe(eventsBefore);
   });
 });
+
+describe('AudioEngine: drift correction while playing', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('late-start drift is corrected after the transition to playing', () => {
+    const h = setup(REAL_MANIFEST, EPOCH_MS + 50 * SEC);
+    h.engine.play();
+    h.el.loadMetadata(); // seek to 50 s
+    h.clock.t += 3 * SEC; // buffering delay before playback actually starts
+    h.el.fire('playing');
+    expect(h.el.currentTime).toBeCloseTo(53, 6);
+    expect(h.engine.debugSnapshot().corrections).toBe(1);
+  });
+
+  it('drift under the 0.75 s threshold is left alone', () => {
+    const h = setup(REAL_MANIFEST, EPOCH_MS + 50 * SEC);
+    h.engine.play();
+    h.el.loadMetadata();
+    h.clock.t += 0.5 * SEC;
+    h.el.fire('playing');
+    expect(h.el.currentTime).toBeCloseTo(50, 6);
+    expect(h.engine.debugSnapshot().corrections).toBe(0);
+  });
+
+  it('no correction while buffering; the correction happens on recovery to playing', () => {
+    const h = setup(REAL_MANIFEST, EPOCH_MS + 50 * SEC);
+    startPlaying(h);
+    h.el.fire('waiting');
+    h.clock.t += 5 * SEC;
+    expect(h.el.currentTime).toBeCloseTo(50, 6); // untouched while buffering
+    expect(h.engine.debugSnapshot().corrections).toBe(0);
+
+    h.el.fire('playing');
+    expect(h.el.currentTime).toBeCloseTo(55, 6);
+    expect(h.engine.debugSnapshot().corrections).toBe(1);
+  });
+
+  it('cap: at most 3 corrections per play session, then stop and record the cap-hit', () => {
+    const h = setup(REAL_MANIFEST, EPOCH_MS + 100 * SEC);
+    startPlaying(h);
+    for (let i = 0; i < 3; i++) {
+      h.clock.t += 2 * SEC;
+      h.el.fire('waiting');
+      h.el.fire('playing');
+    }
+    const snap = h.engine.debugSnapshot();
+    expect(snap.corrections).toBe(3);
+    expect(snap.capHit).toBe(false);
+
+    h.clock.t += 2 * SEC;
+    h.el.fire('waiting');
+    const before = h.el.currentTime;
+    h.el.fire('playing');
+    expect(h.el.currentTime).toBe(before); // no fourth correction
+    expect(h.engine.debugSnapshot().corrections).toBe(3);
+    expect(h.engine.debugSnapshot().capHit).toBe(true);
+  });
+
+  it('pause then play starts a new session with a fresh cap', () => {
+    const h = setup(REAL_MANIFEST, EPOCH_MS + 100 * SEC);
+    startPlaying(h);
+    for (let i = 0; i < 3; i++) {
+      h.clock.t += 2 * SEC;
+      h.el.fire('waiting');
+      h.el.fire('playing');
+    }
+    h.engine.pause();
+    h.engine.play();
+    h.el.loadMetadata();
+    h.clock.t += 2 * SEC;
+    h.el.fire('playing');
+    const snap = h.engine.debugSnapshot();
+    expect(snap.corrections).toBe(1);
+    expect(snap.capHit).toBe(false);
+  });
+
+  it('never seeks to a stale position: a boundary crossed while buffering loads the new track', () => {
+    const h = setup(REAL_MANIFEST, EPOCH_MS + 200 * SEC);
+    startPlaying(h);
+    h.el.fire('waiting');
+    h.clock.t = EPOCH_MS + 230 * SEC; // now in track 1, crossed during the stall
+    h.el.fire('playing');
+    expect(h.el.src).toBe(TRACK1_SRC);
+    expect(h.tracks).toEqual([0, 1]);
+    expect(h.engine.debugSnapshot().corrections).toBe(0);
+  });
+
+  it('ended after a drift correction still resolves from the clock to track 1, not idx+1', () => {
+    const h = setup(REAL_MANIFEST, EPOCH_MS + 200 * SEC);
+    startPlaying(h);
+    h.el.fire('waiting');
+    h.clock.t += 1 * SEC;
+    h.el.fire('playing'); // correction
+    h.clock.t = EPOCH_MS + 211.256 * SEC; // boundary, read through the clock
+    h.el.fire('ended');
+    expect(h.el.src).toBe(TRACK1_SRC);
+    expect(h.tracks).toEqual([0, 1]);
+  });
+
+  it('debugSnapshot reports expected and actual positions and the signed drift', () => {
+    const h = setup(REAL_MANIFEST, EPOCH_MS + 50 * SEC);
+    startPlaying(h);
+    h.clock.t += 2 * SEC;
+    const snap = h.engine.debugSnapshot();
+    expect(snap.expectedTrackIdx).toBe(0);
+    expect(snap.expectedSec).toBeCloseTo(52, 6);
+    expect(snap.actualSec).toBeCloseTo(50, 6);
+    expect(snap.driftSec).toBeCloseTo(-2, 6);
+  });
+});

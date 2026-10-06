@@ -9,6 +9,19 @@ export interface TickEvent {
   positionSec: number;
 }
 
+/** Debug readout for the dev harness: where the clock says we should be, and where the element is. */
+export interface DebugSnapshot {
+  state: EngineState;
+  trackIdx: number;
+  expectedTrackIdx: number;
+  expectedSec: number;
+  actualSec: number;
+  driftSec: number; // actual − expected: negative means behind the clock
+  elDurationSec: number;
+  corrections: number;
+  capHit: boolean;
+}
+
 type Events = {
   state: EngineState;
   track: number;
@@ -19,6 +32,8 @@ const TICK_MS = 250;
 const DRIFT_TOLERANCE_S = 2;
 const RETRY_DELAY_MS = 3000;
 const MAX_RELOADS = 3; // reloads allowed without reaching playing; the next one enters error
+const DRIFT_CORRECT_S = 0.75; // drift beyond this, checked on each transition to playing, is corrected
+const MAX_CORRECTIONS = 3; // per play session
 
 /**
  * Plays the clock-derived live position through one persistent <audio> element.
@@ -38,6 +53,8 @@ export class AudioEngine {
   private loadToken = 0; // bumped on every (re)load and on pause; stale callbacks compare against it
   private retriesLeft = 1;
   private reloads = 0; // reloads since the last time the element reached playing
+  private corrections = 0; // drift seeks in this play session
+  private capHit = false;
   private tickTimer: ReturnType<typeof setInterval> | undefined;
   private retryTimer: ReturnType<typeof setTimeout> | undefined;
   private boundaryTimer: ReturnType<typeof setTimeout> | undefined;
@@ -74,6 +91,8 @@ export class AudioEngine {
     this.wantPlaying = true;
     this.retriesLeft = 1;
     this.reloads = 0;
+    this.corrections = 0;
+    this.capHit = false;
     this.startLoad(false);
   }
 
@@ -98,6 +117,23 @@ export class AudioEngine {
     if (Math.abs(pos.offsetSec - this.el.currentTime) > DRIFT_TOLERANCE_S) {
       this.el.currentTime = pos.offsetSec;
     }
+  }
+
+  /** Snapshot for the debug readout. Reads the clock only through the injected clock. */
+  debugSnapshot(): DebugSnapshot {
+    const pos = this.locate();
+    const actualSec = this.el.currentTime;
+    return {
+      state: this.status,
+      trackIdx: this.currentIdx,
+      expectedTrackIdx: pos.trackIdx,
+      expectedSec: pos.offsetSec,
+      actualSec,
+      driftSec: actualSec - pos.offsetSec,
+      elDurationSec: this.el.duration,
+      corrections: this.corrections,
+      capHit: this.capHit,
+    };
   }
 
   destroy(): void {
@@ -170,7 +206,29 @@ export class AudioEngine {
     this.reloads = 0;
     this.setState('playing');
     this.startTick();
+    this.correctDrift();
   };
+
+  /**
+   * Runs on each transition to playing (covers a buffering recovery). Seeks to the clock-derived
+   * position when drift exceeds the threshold, at most MAX_CORRECTIONS per play session.
+   */
+  private correctDrift(): void {
+    if (!this.wantPlaying || this.status !== 'playing') return;
+    const pos = this.locate();
+    if (pos.trackIdx !== this.currentIdx) {
+      this.startLoad();
+      return;
+    }
+    const drift = this.el.currentTime - pos.offsetSec;
+    if (Math.abs(drift) <= DRIFT_CORRECT_S) return;
+    if (this.corrections >= MAX_CORRECTIONS) {
+      this.capHit = true;
+      return;
+    }
+    this.corrections++;
+    this.el.currentTime = pos.offsetSec;
+  }
 
   private onStall = (): void => {
     if (this.wantPlaying && this.status === 'playing') this.setState('buffering');
