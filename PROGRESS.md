@@ -6,7 +6,7 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [ ] M00 Human setup (accounts, tools) — Kunshe
 - [x] M0  Project scaffold
 - [x] M1  Content pipeline (manifest + R2 upload script)
-- [ ] M2  Sync core (clock + schedule)
+- [x] M2  Sync core (clock + schedule)
 - [ ] M3  Audio engine
 - [ ] M4  i18n (bo / en)
 - [ ] M5  UI shell (Potala theme, kora ring)
@@ -37,6 +37,23 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - Credential files expected by `npm run upload` (names only): `tools/.supabase-service-key.env` with
   SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY; `tools/.r2-credentials.env` with R2_ENDPOINT.
 - e2e test needs ffmpeg and ffprobe on PATH.
+- M1 done: two real tracks uploaded to Supabase; `public/manifest.json` committed (version `5166db301c24`,
+  totalDuration 456.434688 s = 211.255167 + 245.179521).
+- Supabase `exists()` now lists the folder instead of HEAD. Supabase returns a bodyless 400 on HEAD for missing
+  objects, so HEAD cannot tell "missing" from "error".
+- `SUPABASE_URL` is validated before use.
+- Artist names are placeholders ("Unknown" / མིང་མེད). Tibetan titles still need a native-speaker review.
+
+- M2 sync core: `src/core/` has `schedule.ts` (buildIndex, resolve), `clock.ts` (measureOffset, now, setOffset,
+  shouldRemeasure), `manifest.ts` (`parseManifest`, pure, validates `unknown`), `types.ts`. `src/net/loadManifest.ts`
+  is the only fetch of the manifest (wiring layer, not core). Tests use hardcoded M1 durations (211.255167,
+  245.179521, total 456.434688), not a read of public/manifest.json.
+- M2 choices: `measureOffset` drops failed samples and takes the median of the rest; it returns 0 only when all fail.
+  `buildIndex` throws on an empty playlist. `parseManifest` also returns `epochMs`. Track `artwork` is optional.
+  Duplicate track ids are not rejected (not in spec).
+- Coverage: `@vitest/coverage-v8` 5.0.3 (matches vitest 5, dev only), `npm run test:coverage`. Threshold is 100%
+  branches on `src/core/**` only. `coverage/` is gitignored.
+- Lint and build now type-check with `noUncheckedIndexedAccess`; index access in core uses `as number` with a comment.
 
 ## Open questions / follow-ups
 - Confirm the manifest version format (content hash vs ISO timestamp in ARCHITECTURE §8).
