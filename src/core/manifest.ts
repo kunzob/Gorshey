@@ -60,6 +60,11 @@ export function parseManifest(input: unknown): Manifest {
     fail('manifest.tracks', 'must be a non-empty array');
   }
   const tracks = input.tracks.map((t, i) => parseTrack(t, `tracks[${i}]`));
+  const seen = new Set<string>();
+  tracks.forEach((t, i) => {
+    if (seen.has(t.id)) fail(`tracks[${i}].id`, `duplicate id "${t.id}"`);
+    seen.add(t.id);
+  });
 
   const totalDuration = input.totalDuration;
   if (typeof totalDuration !== 'number' || !Number.isFinite(totalDuration)) {

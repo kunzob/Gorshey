@@ -174,6 +174,12 @@ describe('parseManifest: track fields', () => {
     expect(() => parseManifest(raw)).toThrow(/tracks\[0\]\.title/);
   });
 
+  it('rejects duplicate track ids and names the second occurrence', () => {
+    const raw = clone();
+    track(raw, 1).id = track(raw, 0).id;
+    expect(() => parseManifest(raw)).toThrow(/tracks\[1\]\.id.*duplicate.*bd4e9fd47041/i);
+  });
+
   it('rejects a track without a src', () => {
     const raw = clone();
     delete track(raw, 0).src;
