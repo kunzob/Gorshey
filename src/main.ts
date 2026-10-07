@@ -5,7 +5,8 @@ import '../src/styles/base.css';
 import '../src/styles/components.css';
 import { measureOffset, now, onOffsetChange, refineOffset, syncPrecision } from './core/clock';
 import { AudioEngine, type EngineState } from './audio/AudioEngine';
-import { getLocale, setLocaleApplier } from './i18n/i18n';
+import { initMediaSession } from './audio/mediaSession';
+import { getLocale, onLocaleChange, setLocaleApplier } from './i18n/i18n';
 import { Presence, readConfig, tabKey } from './presence';
 import { createSupabaseTransport } from './presence/transport';
 import { loadManifest } from './net/loadManifest';
@@ -30,6 +31,9 @@ async function boot(): Promise<void> {
   const manifest = await loadManifest('/manifest.json');
   const clock = { now, isRefined: () => syncPrecision() === 'refined' };
   const engine = new AudioEngine(manifest, clock);
+  // Lock screen: play/pause go through engine.play()/pause(); the title follows a locale switch immediately.
+  const mediaSession = initMediaSession(engine, getLocale, manifest.tracks);
+  const offLocale = onLocaleChange(() => mediaSession.refresh());
   const offOffset = onOffsetChange(({ previousOffset, offset }) => engine.onClockRefined((offset - previousOffset) / 1000));
 
   // Presence connects lazily: the first time the engine is active. Nothing opens a socket at boot.
@@ -68,6 +72,8 @@ async function boot(): Promise<void> {
     window.removeEventListener('online', onOnline);
     player.unmount();
     presence.destroy();
+    offLocale();
+    mediaSession.dispose();
     engine.destroy();
   };
 }
