@@ -125,14 +125,29 @@ String set (M4, minimal): `station.name`, `player.play`, `player.pause`, `player
 
 ## 6. PWA caching
 
+Two files are both called "manifest". The **track manifest** is `/manifest.json` (playlist, durations, epoch).
+The **web app manifest** is `/manifest.webmanifest` (install metadata). Code uses `TRACK_MANIFEST_PATH` and
+`WEB_APP_MANIFEST_PATH` from `src/core/swRoute.ts`; comments always say which one.
+
 | Request | Strategy |
 | :--- | :--- |
-| App shell (hashed JS/CSS, fonts, icons, index.html) | Precache (injected list), cache-first |
-| `/manifest.json` (tracklist) | Stale-while-revalidate |
-| R2 domain (audio, artwork) | Not intercepted — browser + HTTP cache (`immutable`) handle it, range requests intact |
+| App shell (hashed JS/CSS, `index.html`, Tibetan font + OFL.txt, hero, grain, icons, `manifest.webmanifest`) | Precache (injected list), cache-first; navigations get the precached `index.html` |
+| `/manifest.json` (track manifest) | **Network-first, no timeout.** Cache read only when the network fails; that copy is marked `x-gorshey-manifest: cached` |
+| Other origins (Supabase/R2 audio and artwork, presence) | Not intercepted |
+| Same-origin `/artwork/*`, `/audio/*`, audio file extensions | Not intercepted |
+| Any request with a `Range` header | Not intercepted (real 206 responses) |
 | Non-GET (incl. clock `HEAD`) | Not intercepted |
 
-New SW versions show an "update available" notice; never auto-reload mid-song.
+Why network-first for the track manifest (changed in M8 from stale-while-revalidate): every client derives the
+position from the epoch and the track durations. A stale copy after a playlist change puts a listener on a different
+track or second than everyone else, and old audio URLs may 404. Stale-while-revalidate would serve the old copy on
+every first load after a change, and an installed PWA can go days between loads. The cached copy is only used
+offline, where no audio can play anyway; a page that booted on it reloads once when back online, never while the
+engine is loading, playing or buffering (`src/ui/freshManifest.ts`).
+
+New SW versions wait (no `skipWaiting` on install, no `clients.claim`). The page shows `update.available`; on click
+it posts `SKIP_WAITING` and reloads on `controllerchange`. Never auto-reload mid-song. No service worker in dev.
+`npm run build` fails if the precache list contains the track manifest, media or markdown (`tools/check-precache.mjs`).
 
 ## 7. Theme — Potala Palace at night
 - Tokens: night sky base `#0d0f14`, whitewash text, maroon-grey secondary, gold accent (active states only).

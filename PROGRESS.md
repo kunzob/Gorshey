@@ -13,7 +13,7 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [x] M5  UI shell (Potala theme, kora ring): accepted by Kunshe (evidence: 6a5fc03, 592a017, 3d66029, e104ba0, 1be9975; [HUMAN] checks confirmed)
 - [x] M6  Presence (Supabase): accepted by Kunshe (evidence: 20053de, dd32f79; live checks confirmed)
 - [x] M7  Media Session: accepted by Kunshe (evidence: 8283f6f, c4562db; live checks confirmed)
-- [ ] M8  PWA (manifest + service worker)
+- [ ] M8  PWA (manifest + service worker) (built; [HUMAN] checks pending)
 - [ ] M9  Theme polish
 - [ ] M10 QA (devices, Tibetan rendering, security review)
 - [ ] M11 Deploy
@@ -161,6 +161,8 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - Mockups: `scratch/m5b/` (ignored by git, see `chore: ignore scratch/`).
 
 ## Native-review list (added in M5b)
+- `update.available` (bo: གསར་བཅོས་ཡོད།): shown on the M8 update button. Agent draft; the English says "A new version is
+  available. Reload when you are ready." and the Tibetan draft is shorter. Needs native review.
 - Footer line (bo): `footer.line`. Also the eyebrow, badge, and other new bo strings (`npm run i18n:review` lists them all).
 - Mantra: the placement of the mantra is not in production. Neutral placeholder only. The reviewer needs to decide whether
   it belongs, and where, before any use.
@@ -243,5 +245,43 @@ The agent updates this file at the end of every task. Newest notes at the bottom
   locked, and a lock-screen play after a long pause rejoining live (covered by tests, not yet seen on a device).
 
 ## M11 checklist additions
+- [ ] Vercel headers: `Cache-Control: no-cache` for `/sw.js`, `/index.html` and the track manifest `/manifest.json`
+  (ARCHITECTURE §9). There is no `vercel.json` yet. Without this, a CDN-cached `sw.js` delays updates and a CDN-cached
+  track manifest defeats the network-first strategy.
 - [ ] Resolve the licence of the lock-screen artwork source (`potoala_palace.png`, user-provided wallpaper; see
   `public/ASSETS.md`). Replace the image if the licence cannot be confirmed.
+
+## M8 PWA
+- No new dependency: `vite-plugin-pwa` 2.0.0 and workbox 7.4.1 are devDependencies since M0 (42ccfde). Build-time only;
+  the main bundle has no workbox code (no `virtual:pwa-register`, no workbox-window). The plugin subtree is 329 packages
+  (297 only through it, about 34.7 MB on disk, mostly workbox-build's rollup/babel). `dist/sw.js`: 15,476 bytes minified,
+  5,430 bytes gzip -9. The plugin prints a harmless "inlineDynamicImports is deprecated" warning under vite 8.
+- Built: `src/core/swRoute.ts` (pure routing, under the 100% branch threshold), `src/sw.ts` (one fetch listener),
+  `src/pwa/updates.ts` (registration and update handshake, no DOM), `src/ui/updatePrompt.ts`, `src/ui/freshManifest.ts`,
+  `showBootFailure` in `src/ui/render.ts`, `loadManifestWithSource` in `src/net/loadManifest.ts`,
+  `public/manifest.webmanifest`, `tools/make-icons.mjs` + `tools/icon/gorshey-mark.svg`, `tools/check-precache.mjs`,
+  `tsconfig.sw.json` (WebWorker lib; lint and build type-check it).
+- Decisions (approved): track manifest network-first, no timeout (ARCHITECTURE §6 updated); icons from a built-in
+  rasteriser of a restricted SVG subset that refuses anything else; one reload on `online` after a cached-manifest boot,
+  never while loading, playing or buffering.
+- Routing order: non-GET → other origin → Range → media path (`/artwork/`, `/audio/`, audio extensions) → track manifest
+  → navigation (precached index.html) → precached URL → bypass. Every bypass returns without `respondWith`.
+- Update flow: waiting worker → `#update` button (`update.available`) → click posts `SKIP_WAITING` → reload on
+  `controllerchange`, once, only after the click. A first install never prompts. `reg.update()` runs when the page
+  becomes visible. The prompt never pauses or reloads on its own; the click does reload (and stops audio) by design.
+- Offline: cached track manifest → shell with `player.offline`; a play attempt ends in `error` after one retry (test).
+  No track manifest at all → `showBootFailure`: brand, `player.offline` (or `player.error` online), play disabled,
+  placeholders kept.
+- Dev: no service worker (`devOptions.enabled: false`; registration only when `import.meta.env.PROD`; dev unregisters
+  leftovers).
+- Icons (`public/icons/`): icon-192.png 3,000 B; icon-512.png 7,717 B; icon-maskable-512.png 6,597 B (mark scaled to
+  80%, test checks the safe zone); apple-touch-icon-180.png 2,769 B. All RGB, no alpha. A test re-renders the 192 icon
+  from the SVG and compares bytes.
+- Precache (12 entries, 274.96 KiB): manifest.webmanifest, index.html, 4 icons, hero SVG, grain PNG, Tibetan font,
+  OFL.txt, the hashed JS and CSS. No track manifest, artwork, audio or markdown (checked on every build).
+- Testing: `tests/swRoute.test.ts` (core), `tests/sw.test.ts` (fake ServiceWorkerGlobalScope, workbox mocked),
+  `tests/pwaUpdates.test.ts` (fake container), `tests/pwaShell.test.ts` (static: manifest, icons, html, config),
+  `tests/offline.test.ts`, and DOM tests in `tests/render.test.ts`. Coverage numbers cover `src/core` only; real caching,
+  206 responses and update timing are manual checks.
+- Red run: 44 failing tests against export-only stubs, plus `tests/pwaShell.test.ts` failing at collection (no
+  `public/manifest.webmanifest` yet).
