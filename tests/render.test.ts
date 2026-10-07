@@ -5,7 +5,9 @@ import type { AudioEngine, EngineState, TickEvent } from '../src/audio/AudioEngi
 import type { Manifest } from '../src/core/types';
 import { getLocale, setLocale, setLocaleApplier, t } from '../src/i18n/i18n';
 import { applyDocumentLang } from '../src/ui/locale';
-import { mountPlayer } from '../src/ui/render';
+import { mountPlayer, showBootFailure } from '../src/ui/render';
+import { reloadWhenOnline } from '../src/ui/freshManifest';
+import { onUpdateClick } from '../src/ui/updatePrompt';
 
 const EPOCH_MS = Date.parse('2026-01-01T00:00:00Z');
 const REAL: Manifest = {
@@ -413,5 +415,110 @@ describe('presence badge', () => {
     remount(p);
     ctx.player.unmount();
     expect(p.unsubscribed).toBe(1);
+  });
+});
+
+// ---- M8: update prompt, boot failure, fresh track manifest after an offline boot ----------------------
+
+describe('update prompt button', () => {
+  it('is a button; a click calls apply and never touches the engine', () => {
+    const apply = vi.fn();
+    const off = onUpdateClick(apply);
+    ctx.player.showUpdate();
+    const btn = $<HTMLButtonElement>('update');
+    expect(btn.tagName).toBe('BUTTON');
+    btn.click();
+    expect(apply).toHaveBeenCalledTimes(1);
+    expect(ctx.engine.pause).not.toHaveBeenCalled();
+    expect(ctx.engine.play).not.toHaveBeenCalled();
+    off();
+    btn.click();
+    expect(apply).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the Tibetan catalog text when the UI is bo', () => {
+    setLocale('bo');
+    ctx.player.showUpdate();
+    expect($('update').textContent).toBe(t('update.available'));
+    expect($('update').textContent).toMatch(/[ༀ-࿿]/);
+  });
+});
+
+describe('boot failure (no track manifest at all)', () => {
+  it('offline: shows player.offline, the brand, and an inert play button; no fake numbers', () => {
+    ctx.player.unmount();
+    mountSkeleton();
+    showBootFailure(true);
+    expect($('status').textContent).toBe(t('player.offline'));
+    expect($('station').textContent).toContain('Gorshey');
+    const play = $<HTMLButtonElement>('play');
+    expect(play.disabled).toBe(true);
+    expect(play.textContent).toBe(t('player.play'));
+    expect($('badge').textContent).toBe('—');
+    expect($('title').textContent).toBe('—');
+  });
+
+  it('online: shows player.error instead', () => {
+    ctx.player.unmount();
+    mountSkeleton();
+    showBootFailure(false);
+    expect($('status').textContent).toBe(t('player.error'));
+  });
+});
+
+describe('reloadWhenOnline (booted on the cached track manifest)', () => {
+  function engineIn(state: EngineState): FakeEngine {
+    const e = new FakeEngine();
+    e.state = state;
+    return e;
+  }
+
+  it.each<EngineState>(['idle', 'paused', 'error'])('reloads once when online returns and the engine is %s', (state) => {
+    const reload = vi.fn();
+    const off = reloadWhenOnline({ engine: engineIn(state) as unknown as AudioEngine, reload });
+    window.dispatchEvent(new Event('online'));
+    window.dispatchEvent(new Event('online'));
+    expect(reload).toHaveBeenCalledTimes(1);
+    off();
+  });
+
+  it.each<EngineState>(['playing', 'buffering', 'loading'])('never reloads while the engine is %s', (state) => {
+    const reload = vi.fn();
+    const engine = engineIn(state);
+    const off = reloadWhenOnline({ engine: engine as unknown as AudioEngine, reload });
+    window.dispatchEvent(new Event('online'));
+    engine.emit('state', state === 'playing' ? 'buffering' : 'playing');
+    engine.emit('state', state);
+    expect(reload).not.toHaveBeenCalled();
+    off();
+  });
+
+  it('online while playing, then paused: reloads at the pause, once', () => {
+    const reload = vi.fn();
+    const engine = engineIn('playing');
+    const off = reloadWhenOnline({ engine: engine as unknown as AudioEngine, reload });
+    window.dispatchEvent(new Event('online'));
+    expect(reload).not.toHaveBeenCalled();
+    engine.emit('state', 'paused');
+    engine.emit('state', 'error');
+    expect(reload).toHaveBeenCalledTimes(1);
+    off();
+  });
+
+  it('a state change without an online event never reloads', () => {
+    const reload = vi.fn();
+    const engine = engineIn('idle');
+    const off = reloadWhenOnline({ engine: engine as unknown as AudioEngine, reload });
+    engine.emit('state', 'paused');
+    expect(reload).not.toHaveBeenCalled();
+    off();
+  });
+
+  it('after unsubscribe, online does nothing', () => {
+    const reload = vi.fn();
+    const off = reloadWhenOnline({ engine: engineIn('idle') as unknown as AudioEngine, reload });
+    off();
+    window.dispatchEvent(new Event('online'));
+    expect(reload).not.toHaveBeenCalled();
   });
 });

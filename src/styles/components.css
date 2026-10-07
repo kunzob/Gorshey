@@ -243,6 +243,20 @@
   min-height: 1.5em;
 }
 
+/* Update prompt: a quiet full-width button, shown only when a new version waits. 48 px target, no fixed height. */
+.update {
+  min-height: var(--touch);
+  padding: 8px 16px;
+  border: 1px solid rgba(201, 162, 74, 0.6);
+  border-radius: 12px;
+  background: rgba(13, 15, 20, 0.6);
+  color: var(--color-whitewash);
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: center;
+  cursor: pointer;
+}
+
 .update[hidden] {
   display: none;
 }

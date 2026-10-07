@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && node tools/check-dist.mjs dist",
+    "build": "tsc --noEmit && tsc -p tsconfig.sw.json --noEmit && vite build && node tools/check-dist.mjs dist && node tools/check-precache.mjs dist",
     "preview": "vite preview",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint . && tsc --noEmit",
+    "lint": "eslint . && tsc --noEmit && tsc -p tsconfig.sw.json --noEmit",
     "manifest": "tsx tools/run-manifest.ts && node .claude/skills/gorshey-tibetan/scripts/check-tibetan.mjs public/manifest.json",
     "e2e": "echo \"e2e not configured until M10\" && exit 0",
     "upload": "tsx tools/upload-media.ts",

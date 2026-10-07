@@ -39,7 +39,7 @@ const ACTIVE: EngineState[] = ['loading', 'playing', 'buffering'];
 
 export interface Player {
   unmount(): void;
-  /** Reserved slot for the PWA "update available" prompt (M8). Not wired yet. */
+  /** Shows the "update available" button (M8). Its click is wired in updatePrompt.ts. */
   showUpdate(): void;
 }
 
@@ -184,4 +184,16 @@ export function mountPlayer(opts: {
       r.update.hidden = false;
     },
   };
+}
+
+/**
+ * Boot could not load the track manifest (offline with nothing cached, or a server error). Shows the brand and
+ * the status only; the placeholders stay, so no track or count is invented, and the play button is inert.
+ */
+export function showBootFailure(offline: boolean): void {
+  const r = refs();
+  writeRuns(r.station, brandParts());
+  r.status.textContent = t(offline ? 'player.offline' : 'player.error');
+  r.play.textContent = t('player.play');
+  r.play.disabled = true;
 }

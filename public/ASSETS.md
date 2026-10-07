@@ -4,6 +4,7 @@
 | :--- | :--- | :--- |
 | `artwork/artwork-192.jpg` | Cropped and scaled from `potoala_palace.png` (Potala wallpaper, 1024×1536) by `tools/make-artwork.mjs` | unknown, provided by the user, to be resolved before the M11 release |
 | `artwork/artwork-512.jpg` | Cropped and scaled from `potoala_palace.png` (Potala wallpaper, 1024×1536) by `tools/make-artwork.mjs` | unknown, provided by the user, to be resolved before the M11 release |
+| `icons/*.png` (192, 512, maskable 512, apple-touch 180) | Original drawing by the agent, `tools/icon/gorshey-mark.svg`, rendered by `tools/make-icons.mjs` | Project's own (no third-party artwork) |
 
 - The source file lives at `media/original/potoala_palace.png` and is not in git (`media/` is ignored).
 - Used only as the lock-screen / notification artwork (Media Session). The hero image is `hero/hero-potala.svg`, which is separate and unchanged.

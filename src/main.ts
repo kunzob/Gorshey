@@ -9,10 +9,14 @@ import { initMediaSession } from './audio/mediaSession';
 import { getLocale, onLocaleChange, setLocaleApplier } from './i18n/i18n';
 import { Presence, readConfig, tabKey } from './presence';
 import { createSupabaseTransport } from './presence/transport';
-import { loadManifest } from './net/loadManifest';
+import { loadManifestWithSource } from './net/loadManifest';
+import { TRACK_MANIFEST_PATH } from './core/swRoute';
+import { initUpdates } from './pwa/updates';
 import { startClock } from './ui/ClockView';
 import { refs } from './ui/dom';
-import { mountPlayer } from './ui/render';
+import { mountPlayer, showBootFailure } from './ui/render';
+import { reloadWhenOnline } from './ui/freshManifest';
+import { onUpdateClick, reloadPage } from './ui/updatePrompt';
 import { applyDocumentLang } from './ui/locale';
 import { onBecameVisible } from './ui/visibility';
 
@@ -28,7 +32,7 @@ async function boot(): Promise<void> {
   applyDocumentLang(getLocale());
 
   await measureOffset(); // coarse first, so play is never delayed
-  const manifest = await loadManifest('/manifest.json');
+  const { manifest, fromCache } = await loadManifestWithSource(TRACK_MANIFEST_PATH);
   const clock = { now, isRefined: () => syncPrecision() === 'refined' };
   const engine = new AudioEngine(manifest, clock);
   // Lock screen: play/pause go through engine.play()/pause(); the title follows a locale switch immediately.
@@ -59,11 +63,29 @@ async function boot(): Promise<void> {
     presence,
   });
   const stopClock = startClock(refs().clock, now);
-  const offVisible = onBecameVisible(() => engine.onVisible());
+
+  // PWA: production only (no service worker under npm run dev). The prompt never reloads on its own.
+  const updates = initUpdates({
+    container: 'serviceWorker' in navigator ? navigator.serviceWorker : undefined,
+    prod: import.meta.env.PROD,
+    onAvailable: () => player.showUpdate(),
+    onReload: reloadPage,
+  });
+  const offUpdateClick = onUpdateClick(() => updates.apply());
+  // Booted on the cached track manifest (offline): fetch a fresh one once online, never mid-playback.
+  const offFresh = fromCache ? reloadWhenOnline({ engine, reload: reloadPage }) : () => {};
+
+  const offVisible = onBecameVisible(() => {
+    engine.onVisible();
+    updates.check();
+  });
   void refineOffset(); // background: never blocks playback
 
   teardown = () => {
     offVisible();
+    offFresh();
+    offUpdateClick();
+    updates.dispose();
     stopClock();
     offOffset();
     offPresence();
@@ -78,4 +100,5 @@ async function boot(): Promise<void> {
   };
 }
 
-void boot();
+// No track manifest at all (offline with nothing cached): show the offline or error state, never placeholders as data.
+boot().catch(() => showBootFailure(!navigator.onLine));

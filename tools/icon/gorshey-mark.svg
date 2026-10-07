@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Gorshey mark: the kora ring around a palace silhouette (original drawing)</title>
+  <!-- Night background. id="background" keeps it full-bleed in the maskable icon. -->
+  <rect id="background" x="0" y="0" width="512" height="512" fill="#0d0f14"/>
+  <!-- Kora ring -->
+  <circle cx="256" cy="256" r="196" fill="none" stroke="#c9a24a" stroke-width="18"/>
+  <!-- Marpo Ri, the hill -->
+  <polygon points="112,374 172,322 340,322 400,374" fill="#4a3b33"/>
+  <!-- White palace: stepped wings -->
+  <polygon points="140,340 140,292 172,292 172,266 206,266 206,244 306,244 306,266 340,266 340,292 372,292 372,340" fill="#f2ede4"/>
+  <!-- Window bands -->
+  <rect x="150" y="306" width="212" height="6" fill="#4a3b33"/>
+  <rect x="180" y="278" width="152" height="5" fill="#4a3b33"/>
+  <!-- Red palace -->
+  <rect x="214" y="200" width="84" height="56" fill="#8a2f24"/>
+  <rect x="226" y="222" width="60" height="5" fill="#4a1a14"/>
+  <!-- Gold roofs -->
+  <rect x="220" y="188" width="72" height="12" fill="#c9a24a"/>
+  <polygon points="230,188 238,172 246,188" fill="#c9a24a"/>
+  <polygon points="266,188 274,172 282,188" fill="#c9a24a"/>
+</svg>
