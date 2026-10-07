@@ -9,7 +9,8 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [x] M2  Sync core (clock + schedule)
 - [x] M3  Audio engine
 - [x] M4  i18n (bo / en)
-- [ ] M5  UI shell (Potala theme, kora ring): built; DOM tests in place (happy-dom); [HUMAN] checks pending
+- [x] M5b Visual design pass (Lantern Column): evidence 78c96f9, 35f1624
+- [x] M5  UI shell (Potala theme, kora ring): accepted by Kunshe (evidence: 6a5fc03, 592a017, 3d66029, e104ba0, 1be9975; [HUMAN] checks confirmed)
 - [ ] M6  Presence (Supabase)
 - [ ] M7  Media Session
 - [ ] M8  PWA (manifest + service worker)
@@ -163,3 +164,16 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - Footer line (bo): `footer.line`. Also the eyebrow, badge, and other new bo strings (`npm run i18n:review` lists them all).
 - Mantra: the placement of the mantra is not in production. Neutral placeholder only. The reviewer needs to decide whether
   it belongs, and where, before any use.
+
+## M5 / M5b evidence (ticked by Kunshe's request)
+- M5b commits: 78c96f9 (feat: Lantern Column), 35f1624 (docs). Scratch mockups: `scratch/m5b/` (git-ignored, 81bb684).
+- Red runs captured before implementation: static 8 failures, DOM 5 failures (see the session log).
+- Contrast, 375x667 and 1280x800, en and bo, scrim NOT added (all pass):
+  whitewash text rgb(242,237,228) on the brightest background pixel under each box:
+  station 16.44:1 (large, needs 3); locale 16.44; title 16.54; subtitle 16.54; play 12.57; nextup 13.34;
+  badge/clock/eyebrow/footer 9.43 (opacity 0.75); artist 8.34 (opacity 0.7); position (proxy, strip background,
+  while playing) 8.58 (opacity 0.8). Needs: 4.5:1 body, 3:1 large. Script: `scratch/m5b/contrast.mjs`.
+- Greps: innerHTML/outerHTML/insertAdjacentHTML in src: none. Date.now/new Date in src: only src/core/clock.ts.
+  document in src outside src/ui: none.
+- Known hard-coded items (not catalog): `<title>Gorshey</title>` (brand name) and the static `—` placeholders in
+  index.html, shown only until the first render. Neutral placeholders by design (ARCHITECTURE §7).
