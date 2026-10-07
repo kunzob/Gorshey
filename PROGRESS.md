@@ -11,7 +11,7 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [x] M4  i18n (bo / en)
 - [x] M5b Visual design pass (Lantern Column): evidence 78c96f9, 35f1624
 - [x] M5  UI shell (Potala theme, kora ring): accepted by Kunshe (evidence: 6a5fc03, 592a017, 3d66029, e104ba0, 1be9975; [HUMAN] checks confirmed)
-- [ ] M6  Presence (Supabase): code complete (20053de); live checks below still pending, so not ticked
+- [x] M6  Presence (Supabase): accepted by Kunshe (evidence: 20053de, dd32f79; live checks confirmed)
 - [ ] M7  Media Session
 - [ ] M8  PWA (manifest + service worker)
 - [ ] M9  Theme polish
@@ -204,6 +204,9 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - Docs wording for the presence-calls limit: the Limits page gives it as a table row, "Presence calls per client, per 30 seconds"
   with 5 for every plan (https://supabase.com/docs/guides/realtime/limits). The docs do not state what counts as a call.
 - Bundle: only VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY names appear; the dist secret check reports 0 hits.
-- **Pending, live (not run here):** acceptance 1, the count rising and falling within seconds across two real tabs;
-  acceptance 2, blocking the Supabase domain in DevTools leaves playback working with the badge at "—".
-  Lazy connection in main.ts is wired but not covered by a test; the Presence class is.
+- **Live checks, run by Kunshe and confirmed passing (2026-10-07):**
+  - Before play the badge shows "—" and no websocket is open (covers the untested lazy connection in main.ts).
+  - After play the kora badge shows 1.
+  - Two windows: the count rises to 2, then falls back to 1 when one leaves (acceptance 1).
+  - Offline: the badge shows "—" while audio keeps playing (acceptance 2).
+  - Tibetan text displays correctly.
