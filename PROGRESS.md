@@ -12,7 +12,7 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [x] M5b Visual design pass (Lantern Column): evidence 78c96f9, 35f1624
 - [x] M5  UI shell (Potala theme, kora ring): accepted by Kunshe (evidence: 6a5fc03, 592a017, 3d66029, e104ba0, 1be9975; [HUMAN] checks confirmed)
 - [x] M6  Presence (Supabase): accepted by Kunshe (evidence: 20053de, dd32f79; live checks confirmed)
-- [ ] M7  Media Session (built; [HUMAN] lock-screen checks pending)
+- [x] M7  Media Session: accepted by Kunshe (evidence: 8283f6f, c4562db; live checks confirmed)
 - [ ] M8  PWA (manifest + service worker)
 - [ ] M9  Theme polish
 - [ ] M10 QA (devices, Tibetan rendering, security review)
@@ -229,6 +229,18 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - Artwork: `tools/make-artwork.mjs` (ffmpeg, crop 900x900 at 124,270, lanczos, JPEG q5, metadata stripped, reproducible bytes).
   Sizes: 192 → 10,086 bytes, 512 → 56,163 bytes. PNG was rejected: about 512 KB at 512 px (about 187 KB quantised).
   Source and licence in `public/ASSETS.md`. M8 note added: exclude `/artwork/` from the service worker.
+
+## M7 evidence
+- Commits: 8283f6f (mediaSession, wiring, artwork script and JPEGs, ASSETS.md), c4562db (docs, M8 artwork note).
+- Tests: 374 passing, 46 in `tests/mediaSession.test.ts`. Red run before implementation: 37 failing, 9 passing against an
+  exports-only stub. Coverage on src/core still 100% branches.
+- **Live checks, run by Kunshe and confirmed passing (2026-10-07), desktop Chrome and phone:**
+  - Metadata (title, artist, album) and the Potala artwork show.
+  - Play and pause work from the system controls.
+  - No seek or skip controls.
+  - The title switches language immediately on a locale change.
+- Not reported in this round, carried to the M10 device pass (skill §6): the track boundary passing while the screen is
+  locked, and a lock-screen play after a long pause rejoining live (covered by tests, not yet seen on a device).
 
 ## M11 checklist additions
 - [ ] Resolve the licence of the lock-screen artwork source (`potoala_palace.png`, user-provided wallpaper; see
