@@ -63,7 +63,19 @@ export function mountPlayer(opts: {
     return artist ? artist[locale === 'bo' ? 'bo' : 'en'] : '';
   };
 
+  function paintArtwork(): void {
+    const art = manifest.tracks[trackIdx]?.artwork;
+    if (art) {
+      r.artwork.src = art;
+      r.artwork.hidden = false;
+    } else {
+      r.artwork.removeAttribute('src');
+      r.artwork.hidden = true;
+    }
+  }
+
   function paintTrack(locale: Locale): void {
+    paintArtwork();
     const runs = titleParts(manifest.tracks[trackIdx]!.title, locale);
     writeRuns(r.title, [runs[0]!]);
     writeRuns(r.subtitle, [runs[1]!]);
@@ -95,6 +107,7 @@ export function mountPlayer(opts: {
     r.locale.lang = locale;
     r.eyebrow.textContent = t('eyebrow.line', { live: t('player.live'), place: t('place.marpoRi') });
     r.update.textContent = t('update.available');
+    writeRuns(r.footer, [{ text: t('footer.line'), lang: locale }]);
     paintTrack(locale);
     paintPlayer();
     paintStatus();
@@ -115,6 +128,11 @@ export function mountPlayer(opts: {
     paintPlayer();
   });
   const offLocale = onLocaleChange((locale) => paintLocale(locale));
+  // A missing or failing image is hidden, so the ring stays and no broken-image icon shows.
+  const onArtError = (): void => {
+    r.artwork.hidden = true;
+  };
+  r.artwork.addEventListener('error', onArtError);
 
   const onPlay = (): void => {
     if (ACTIVE.includes(state)) engine.pause();
@@ -141,6 +159,7 @@ export function mountPlayer(opts: {
       offTrack();
       offTick();
       offLocale();
+      r.artwork.removeEventListener('error', onArtError);
       r.play.removeEventListener('click', onPlay);
       r.locale.removeEventListener('click', onLocale);
       window.removeEventListener('online', onNetwork);

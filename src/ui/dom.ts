@@ -13,6 +13,7 @@ export function refs() {
     station: req('station'),
     ringFill: req<SVGCircleElement>('ring-fill'),
     artwork: req<HTMLImageElement>('artwork'),
+    footer: req('footer'),
     eyebrow: req('eyebrow'),
     title: req('title'),
     subtitle: req('subtitle'),

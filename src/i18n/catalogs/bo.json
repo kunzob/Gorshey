@@ -12,5 +12,6 @@
   "eyebrow.line": "{live} ། {place}",
   "player.buffering": "སྒྲིག་བཞིན་ཡོད།…",
   "update.available": "གསར་བཅོས་ཡོད།",
-  "list.separator": " ། "
+  "list.separator": " ། ",
+  "footer.line": "མར་པོ་རི། · 3,700 མ། · 1645"
 }

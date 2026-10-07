@@ -297,3 +297,48 @@ describe('language toggle label span', () => {
     setLocale('en');
   });
 });
+
+describe('footer line (catalog, own lang span)', () => {
+  it('the footer text is the catalog string, in a span tagged with the UI language', () => {
+    const span = $('footer').querySelector('span')!;
+    expect(span.textContent).toBe('MARPO RI · 3,700 M · 1645');
+    expect(span.lang).toBe('en');
+  });
+
+  it('in Tibetan mode the footer is the Tibetan catalog string, tagged bo', () => {
+    setLocale('bo');
+    const span = $('footer').querySelector('span')!;
+    expect(span.textContent).toBe(t('footer.line'));
+    expect(span.lang).toBe('bo');
+    setLocale('en');
+  });
+});
+
+describe('artwork in the ring', () => {
+  it('the image source is the current track artwork from the manifest', () => {
+    const manifest = { ...REAL, tracks: [{ ...REAL.tracks[0]!, artwork: 'https://cdn.test/art/a.jpg' }, REAL.tracks[1]!] };
+    ctx.player.unmount();
+    mountSkeleton();
+    const engine = new FakeEngine();
+    const player = mountPlayer({ engine: engine as unknown as AudioEngine, manifest, now: () => EPOCH_MS + 50_000, offline: () => false });
+    ctx = { engine, player };
+    expect($('artwork').getAttribute('src')).toBe('https://cdn.test/art/a.jpg');
+    expect($('artwork').hidden).toBe(false);
+  });
+
+  it('a track without artwork hides the image (no broken-image icon)', () => {
+    expect($('artwork').hidden).toBe(true);
+  });
+
+  it('a failing image is hidden, so the ring stays and nothing shifts visibly', () => {
+    const manifest = { ...REAL, tracks: [{ ...REAL.tracks[0]!, artwork: 'https://cdn.test/art/broken.jpg' }, REAL.tracks[1]!] };
+    ctx.player.unmount();
+    mountSkeleton();
+    const engine = new FakeEngine();
+    const player = mountPlayer({ engine: engine as unknown as AudioEngine, manifest, now: () => EPOCH_MS + 50_000, offline: () => false });
+    ctx = { engine, player };
+    $('artwork').dispatchEvent(new Event('error'));
+    expect($('artwork').hidden).toBe(true);
+    expect(document.querySelector('svg.ring')).not.toBeNull();
+  });
+});

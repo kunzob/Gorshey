@@ -12,5 +12,6 @@
   "eyebrow.line": "{live} · {place}",
   "player.buffering": "Buffering…",
   "update.available": "A new version is available. Reload when you are ready.",
-  "list.separator": " / "
+  "list.separator": " / ",
+  "footer.line": "MARPO RI · 3,700 M · 1645"
 }

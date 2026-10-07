@@ -1,4 +1,52 @@
-/* Functional layout for the player shell. */
+/* Direction B, "Lantern Column": hero behind everything, a halo over the palace, one glass strip, a mono footer. */
+
+/* ---- layers: hero (back), scrim (text legibility), grain (pre-rendered tile), then the player ---- */
+.hero {
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+}
+
+.hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: linear-gradient(
+    180deg,
+    rgba(7, 9, 16, 0.72) 0%,
+    rgba(7, 9, 16, 0.2) 32%,
+    rgba(7, 9, 16, 0.4) 58%,
+    rgba(7, 9, 16, 0.9) 100%
+  );
+}
+
+/* Static tile; strength is set by opacity, no runtime SVG filter. */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: url(/grain/grain.png);
+  background-size: 64px 64px;
+  opacity: 0.12;
+}
+
+.mono {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  margin: 0;
+  opacity: 0.75;
+}
+
+/* ---- player column: one viewport, safe area inside the box ---- */
 .player {
   max-width: var(--max-width);
   min-height: 100dvh; /* border-box (base.css): padding stays inside the viewport height */
@@ -16,37 +64,9 @@
   text-align: center;
 }
 
-/* Every interactive target: at least 48 px, with at least 8 px between targets (.controls and .top). */
-.touch {
-  min-height: 48px;
-  min-width: 48px;
-  padding: 0 var(--space-2);
-  border: 1px solid var(--color-maroon);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--color-whitewash);
-  font: inherit;
-  cursor: pointer;
-}
-
-.touch:focus-visible {
-  outline: 2px solid var(--color-gold);
-  outline-offset: 2px;
-}
-
-/* Nothing in the column may be wider than the column: long brand or next-up text wraps instead of pushing the header. */
+/* Nothing in the column may be wider than the column: long text wraps instead of pushing the header. */
 .player > * {
   max-width: 100%;
-}
-
-.station {
-  margin: 0;
-  font-size: 1.25rem;
-  overflow-wrap: anywhere;
-}
-
-.nextup {
-  overflow-wrap: anywhere;
 }
 
 .top {
@@ -58,19 +78,33 @@
   width: 100%;
 }
 
-.controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
+/* Every interactive target: at least 48 px, with at least 8 px between targets (.controls and .top). */
+.touch {
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0 var(--space-2);
+  border: 1px solid rgba(242, 237, 228, 0.35);
+  border-radius: 999px;
+  background: rgba(13, 15, 20, 0.4);
+  color: var(--color-whitewash);
+  font: inherit;
+  cursor: pointer;
+}
+
+.touch:focus-visible,
+.play:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+.toggle {
+  white-space: nowrap;
 }
 
 .badge {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  margin: 0;
 }
 
 .dot {
@@ -80,11 +114,18 @@
   background: var(--color-maroon);
 }
 
-/* Kora ring: the circle is rotated so progress starts at 12 o'clock and runs clockwise. */
-.art {
+.station {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* Kora ring over the palace: the circle is rotated so progress starts at 12 o'clock and runs clockwise. */
+.halo {
   position: relative;
-  width: var(--ring-size);
-  height: var(--ring-size);
+  width: min(var(--ring-size), 300px);
+  height: min(var(--ring-size), 300px);
 }
 
 .ring {
@@ -97,8 +138,7 @@
 
 .ring-track {
   fill: none;
-  stroke: var(--color-maroon);
-  stroke-opacity: 0.35;
+  stroke: rgba(242, 237, 228, 0.22);
   stroke-width: 3;
 }
 
@@ -111,11 +151,37 @@
 
 .artwork {
   position: absolute;
-  inset: 8%;
-  width: 84%;
-  height: 84%;
+  inset: 12%;
+  width: 76%;
+  height: 76%;
   border-radius: 50%;
   object-fit: cover;
+}
+
+.artwork[hidden] {
+  display: none;
+}
+
+.glass {
+  background: rgba(13, 15, 20, 0.55);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(242, 237, 228, 0.12);
+  border-radius: 24px;
+}
+
+.strip {
+  width: min(92vw, 420px);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: start;
+}
+
+.strip .text {
+  flex: 1;
+  min-width: 0;
 }
 
 .eyebrow,
@@ -130,8 +196,59 @@
 
 .title {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   min-height: calc(2 * 1.9em);
+}
+
+.artist {
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.position {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Play/pause: a pill, one line, no fixed height (min-height gives the 48 px target). */
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: none;
+}
+
+.play {
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 1px solid rgba(242, 237, 228, 0.5);
+  border-radius: 999px;
+  background: rgba(201, 162, 74, 0.18);
+  color: var(--color-whitewash);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.nextup {
+  font-size: 0.95rem;
+  opacity: 0.9;
+  overflow-wrap: anywhere;
+}
+
+.status[aria-live] {
+  min-height: 1.5em;
+}
+
+.update[hidden] {
+  display: none;
+}
+
+.footer {
+  padding-top: 4px;
 }
 
 /* Short phones (375x667 and smaller): tighter rows so the play button and next-up line stay on screen. */
@@ -141,21 +258,13 @@
   }
 
   .title {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     min-height: 1.9em;
   }
 
   .nextup {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
-}
-
-.status[aria-live] {
-  min-height: 1.5em;
-}
-
-.update[hidden] {
-  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
