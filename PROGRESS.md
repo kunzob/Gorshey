@@ -12,7 +12,7 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [x] M5b Visual design pass (Lantern Column): evidence 78c96f9, 35f1624
 - [x] M5  UI shell (Potala theme, kora ring): accepted by Kunshe (evidence: 6a5fc03, 592a017, 3d66029, e104ba0, 1be9975; [HUMAN] checks confirmed)
 - [x] M6  Presence (Supabase): accepted by Kunshe (evidence: 20053de, dd32f79; live checks confirmed)
-- [ ] M7  Media Session
+- [ ] M7  Media Session (built; [HUMAN] lock-screen checks pending)
 - [ ] M8  PWA (manifest + service worker)
 - [ ] M9  Theme polish
 - [ ] M10 QA (devices, Tibetan rendering, security review)
@@ -210,3 +210,26 @@ The agent updates this file at the end of every task. Newest notes at the bottom
   - Two windows: the count rises to 2, then falls back to 1 when one leaves (acceptance 1).
   - Offline: the badge shows "—" while audio keeps playing (acceptance 2).
   - Tibetan text displays correctly.
+
+## M7 Media Session
+- Built: `src/audio/mediaSession.ts` (`initMediaSession(engine, getLocale, tracks, env?)`, `metadataFor`, `playbackStateFor`),
+  `tests/mediaSession.test.ts` (46 tests), wiring in `src/main.ts`. The module touches only `navigator.mediaSession` and
+  `MediaMetadata`, never the DOM; `env` is injectable for tests.
+- Actions: `play` → `engine.play()`, `pause` → `engine.pause()`. `seekto`, `seekbackward`, `seekforward`, `previoustrack`,
+  `nexttrack` are set to `null` explicitly. Every `setActionHandler` call has its own try/catch (some browsers throw for
+  unknown actions). A lock-screen play takes the same path as the button, so it always re-resolves from the clock
+  (integration tests with the real AudioEngine).
+- playbackState: idle → none; loading, playing, buffering → playing; paused, error → paused (error offers Play = retry).
+- Metadata: title and artist via `pick(…, getLocale())`, album "Gorshey · སྒོར་གཞས།" (same as `station.name`), artwork
+  `/artwork/artwork-192.jpg` and `/artwork/artwork-512.jpg`. Per-track manifest artwork is not used on the lock screen.
+  The skill suggests 96/256/512; 192/512 chosen with Kunshe.
+- **Locale decision: immediate.** `main.ts` calls `refresh()` on `onLocaleChange`, which rewrites the title and artist
+  of the current track at once (tested).
+- No `navigator.mediaSession`: a no-op handle, nothing thrown. No `MediaMetadata`: handlers and state still set.
+- Artwork: `tools/make-artwork.mjs` (ffmpeg, crop 900x900 at 124,270, lanczos, JPEG q5, metadata stripped, reproducible bytes).
+  Sizes: 192 → 10,086 bytes, 512 → 56,163 bytes. PNG was rejected: about 512 KB at 512 px (about 187 KB quantised).
+  Source and licence in `public/ASSETS.md`. M8 note added: exclude `/artwork/` from the service worker.
+
+## M11 checklist additions
+- [ ] Resolve the licence of the lock-screen artwork source (`potoala_palace.png`, user-provided wallpaper; see
+  `public/ASSETS.md`). Replace the image if the licence cannot be confirmed.

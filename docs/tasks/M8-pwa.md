@@ -25,3 +25,7 @@
 - Precache the Tibetan font in the service worker: `/fonts/NotoSerifTibetan-tibetan-subset.woff2`. The page preloads it
   on every load, so it is always needed. Precache `/fonts/OFL.txt` with it.
 - Media (audio, artwork) stays out of the precache, per ARCHITECTURE §6.
+
+## Lock-screen artwork (added after M7)
+- `/artwork/*` (Media Session artwork, `public/artwork/`) is same-origin but counts as media under invariant 5:
+  the service worker must not intercept it. Exclude `/artwork/` from routing and from the precache glob.
