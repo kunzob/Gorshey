@@ -9,7 +9,7 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [x] M2  Sync core (clock + schedule)
 - [x] M3  Audio engine
 - [x] M4  i18n (bo / en)
-- [ ] M5  UI shell (Potala theme, kora ring): built, DOM-level tests pending a DOM-library approval (see follow-ups)
+- [ ] M5  UI shell (Potala theme, kora ring): built; DOM tests in place (happy-dom); [HUMAN] checks pending
 - [ ] M6  Presence (Supabase)
 - [ ] M7  Media Session
 - [ ] M8  PWA (manifest + service worker)
@@ -142,3 +142,24 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 ## M10 checklist additions
 - [ ] Lighthouse CLS check on the production build (mobile emulation), with the Tibetan web font swapping in. Target: CLS ≈ 0.
 - [ ] Layout at 375x667 in both languages: no page scroll, play button and next-up line fully visible (round 4 check).
+
+## M5b visual design (Direction B, Lantern Column)
+- Built: full-bleed hero (`public/hero/hero-potala.svg`, 4,420 bytes, one `<img>` slot, no runtime filter), a scrim, a
+  pre-rendered grain tile (`public/grain/grain.png`, 4,228 bytes, from `tools/make-grain.mjs`), the kora halo with the
+  artwork inside, a glass strip (eyebrow, title, subtitle, artist, position, pill play button), next-up line, mono footer.
+- Artwork in the ring: the M5 deferral is superseded by the approved composition. A missing or failing image is hidden,
+  so the ring stays and no broken-image icon shows (tests).
+- Footer: `footer.line` from the catalogs only ("MARPO RI · 3,700 M · 1645"). The "EST." copy and the mantra are not in
+  production. The footer source is ARCHITECTURE §7 (original copy: "MARPO RI · 3,700 M · EST. 1645 · STATION EST. FIRE HORSE 2153").
+  **Unverified** until Kunshe confirms the figures and the wording.
+- Contrast (headless Chrome, production build, text made transparent, brightest background pixel under each box, WCAG 2.x,
+  opacity blended in worst case). 375x667 and 1280x800, en and bo: every text block passes. Lowest: artist 8.34:1 (4.5 needed);
+  play 12.57:1; footer 9.43:1; position (proxy, strip background, while playing) 8.58:1. No scrim change needed.
+  Scratch script: `scratch/m5b/contrast.mjs` (not committed). Playing state is not reachable headlessly, so position is a proxy.
+- Layout at 375x667: lowest element ends at 597 px (en) and 614 px (bo). Play button 48 px high, one line (nowrap).
+- Mockups: `scratch/m5b/` (ignored by git, see `chore: ignore scratch/`).
+
+## Native-review list (added in M5b)
+- Footer line (bo): `footer.line`. Also the eyebrow, badge, and other new bo strings (`npm run i18n:review` lists them all).
+- Mantra: the placement of the mantra is not in production. Neutral placeholder only. The reviewer needs to decide whether
+  it belongs, and where, before any use.
