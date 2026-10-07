@@ -19,6 +19,7 @@ export const VIEW_KEYS = [
   'place.marpoRi',
   'eyebrow.line',
   'badge.listeners',
+  'badge.unknown',
   'player.nextUp',
   'list.separator',
   'update.available',

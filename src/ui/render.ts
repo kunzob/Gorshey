@@ -43,11 +43,16 @@ export interface Player {
   showUpdate(): void;
 }
 
+export interface PresenceLike {
+  onChange(cb: (c: { state: string; count: number | null }) => void): () => void;
+}
+
 export function mountPlayer(opts: {
   engine: AudioEngine;
   manifest: Manifest;
   now: () => number;
   offline: () => boolean;
+  presence?: PresenceLike;
 }): Player {
   const { engine, manifest, now } = opts;
   const r = refs();
@@ -88,6 +93,12 @@ export function mountPlayer(opts: {
     r.play.textContent = t(playLabelKey(state));
     r.position.textContent = positionLabel(positionSec, duration(), active);
     setRing(r.ringFill, active ? positionSec : 0, duration());
+  }
+
+  /** Listener count only while watching or listening with a number; otherwise the placeholder (never a fake count). */
+  function paintBadge(c: { state: string; count: number | null } | null): void {
+    const live = c !== null && (c.state === 'listening' || c.state === 'watching') && c.count !== null;
+    r.badge.textContent = live ? t('badge.listeners', { n: c.count as number }) : t('badge.unknown');
   }
 
   function paintStatus(): void {
@@ -151,10 +162,14 @@ export function mountPlayer(opts: {
   window.addEventListener('online', onNetwork);
   window.addEventListener('offline', onNetwork);
 
+  paintBadge(null);
+  const offPresence = opts.presence?.onChange((c) => paintBadge(c)) ?? (() => {});
+
   paintLocale(getLocale());
 
   return {
     unmount(): void {
+      offPresence();
       offState();
       offTrack();
       offTick();

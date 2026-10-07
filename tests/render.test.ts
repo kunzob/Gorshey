@@ -342,3 +342,76 @@ describe('artwork in the ring', () => {
     expect(document.querySelector('svg.ring')).not.toBeNull();
   });
 });
+
+describe('presence badge', () => {
+  // Minimal presence stand-in: the renderer only needs onChange().
+  function presenceStub() {
+    let cb: ((c: { state: string; count: number | null }) => void) | null = null;
+    let unsubscribed = 0;
+    return {
+      onChange(fn: (c: { state: string; count: number | null }) => void) {
+        cb = fn;
+        return () => {
+          unsubscribed++;
+          cb = null;
+        };
+      },
+      emit(c: { state: string; count: number | null }) {
+        cb?.(c);
+      },
+      get unsubscribed() {
+        return unsubscribed;
+      },
+    };
+  }
+
+  function remount(presence?: ReturnType<typeof presenceStub>) {
+    ctx.player.unmount();
+    mountSkeleton();
+    const engine = new FakeEngine();
+    const player = mountPlayer({
+      engine: engine as unknown as AudioEngine,
+      manifest: REAL,
+      now: () => EPOCH_MS + 50_000,
+      offline: () => false,
+      presence: presence as never,
+    });
+    ctx = { engine, player };
+  }
+
+  it('without presence the badge shows the catalog placeholder, never a number', () => {
+    expect($('badge').textContent).toBe('—');
+  });
+
+  it('while watching with a count, the badge shows the catalog line with the count', () => {
+    const p = presenceStub();
+    remount(p);
+    p.emit({ state: 'watching', count: 3 });
+    expect($('badge').textContent).toBe('3 on the kora');
+  });
+
+  it('counts are grouped with Western digits', () => {
+    const p = presenceStub();
+    remount(p);
+    p.emit({ state: 'listening', count: 1234 });
+    expect($('badge').textContent).toBe('1,234 on the kora');
+  });
+
+  it('connecting, backoff and offline all show the placeholder, even if a stale count is present', () => {
+    const p = presenceStub();
+    remount(p);
+    p.emit({ state: 'connecting', count: 9 });
+    expect($('badge').textContent).toBe('—');
+    p.emit({ state: 'backoff', count: 9 });
+    expect($('badge').textContent).toBe('—');
+    p.emit({ state: 'offline', count: 9 });
+    expect($('badge').textContent).toBe('—');
+  });
+
+  it('unmount unsubscribes from presence', () => {
+    const p = presenceStub();
+    remount(p);
+    ctx.player.unmount();
+    expect(p.unsubscribed).toBe(1);
+  });
+});

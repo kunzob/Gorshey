@@ -13,5 +13,6 @@
   "player.buffering": "སྒྲིག་བཞིན་ཡོད།…",
   "update.available": "གསར་བཅོས་ཡོད།",
   "list.separator": " ། ",
-  "footer.line": "མར་པོ་རི། · 3,700 མ། · 1645"
+  "footer.line": "མར་པོ་རི། · 3,700 མ། · 1645",
+  "badge.unknown": "སྒོར་ལ་ —"
 }

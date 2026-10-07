@@ -177,3 +177,21 @@ The agent updates this file at the end of every task. Newest notes at the bottom
   document in src outside src/ui: none.
 - Known hard-coded items (not catalog): `<title>Gorshey</title>` (brand name) and the static `—` placeholders in
   index.html, shown only until the first render. Neutral placeholders by design (ARCHITECTURE §7).
+
+## M6 presence (Supabase Realtime)
+- Dependency: `@supabase/realtime-js` 2.117.2, already installed from M0 (no new package). Unpacked 754,305 bytes;
+  transitive `tslib`, `@supabase/phoenix`. The main bundle grew to 78.33 kB (24.01 kB gzip).
+- Connects lazily on the first active engine state (playing, buffering or loading). Nothing opens a socket at boot.
+- State model: disabled | idle | connecting | listening | watching | backoff | offline. Timeout 10 s, backoff 1 s doubling to 30 s
+  with ±20% jitter. `pagehide` and `destroy()` leave the channel and clear timers. Offline stops attempts until `online`.
+- Rate limit: presence calls are coalesced (1 s) and bucketed. The bucket is 5 calls per 30 s, a configurable constant.
+  Docs wording, as fetched on 2026-10-07: table row "Presence calls per client, per 30 seconds: 5 5 5 5 5"
+  (https://supabase.com/docs/guides/realtime/limits). The docs do not say what counts as a call; track() and untrack()
+  are assumed to count.
+- Free-tier limits (same page): concurrent connections 200; messages per second 100; channel joins per second 100;
+  presence messages per second 20; presence keys per object 10.
+- Badge: the listener count only while watching or listening with a number. Otherwise the catalog placeholder.
+- Per-tab key: `sessionStorage` key `gorshey.presenceKey`, with an in-memory fallback when storage is blocked.
+- Build step: `tools/check-dist.mjs` fails the build if dist/ contains service_role, sb_secret, SUPABASE_SERVICE_ROLE_KEY
+  or secret-key.
+- Not done: `.env.example` (a shell read was denied by the tool permissions; the names are in `src/presence/config.ts`).
