@@ -13,7 +13,7 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [x] M5  UI shell (Potala theme, kora ring): accepted by Kunshe (evidence: 6a5fc03, 592a017, 3d66029, e104ba0, 1be9975; [HUMAN] checks confirmed)
 - [x] M6  Presence (Supabase): accepted by Kunshe (evidence: 20053de, dd32f79; live checks confirmed)
 - [x] M7  Media Session: accepted by Kunshe (evidence: 8283f6f, c4562db; live checks confirmed)
-- [ ] M8  PWA (manifest + service worker) (built; [HUMAN] checks pending)
+- [x] M8  PWA (manifest + service worker): accepted by Kunshe (evidence: 0029194, c2c2d0b; live checks confirmed)
 - [ ] M9  Theme polish
 - [ ] M10 QA (devices, Tibetan rendering, security review)
 - [ ] M11 Deploy
@@ -285,3 +285,21 @@ The agent updates this file at the end of every task. Newest notes at the bottom
   206 responses and update timing are manual checks.
 - Red run: 44 failing tests against export-only stubs, plus `tests/pwaShell.test.ts` failing at collection (no
   `public/manifest.webmanifest` yet).
+
+## M8 evidence
+- Commits: 0029194 (service worker, web app manifest, icons, user-controlled updates), c2c2d0b (docs: network-first
+  track manifest in ARCHITECTURE §6, M8 notes, review and M11 items).
+- **Live checks, run by Kunshe on the production preview in desktop Chrome and confirmed passing (2026-10-12):**
+  - The service worker is active and controls the page.
+  - Audio and artwork requests are never "(from ServiceWorker)"; audio requests return 206.
+  - The track manifest is fetched from the network (304 revalidation).
+  - An offline reload shows the shell and the offline state.
+  - The reload on reconnect works.
+  - The app installs.
+  - Lighthouse mobile: Performance 97, Accessibility 100, Best Practices 100, SEO 83, CLS 0.
+- Not covered in this round: phone install and offline behaviour on iOS/Android. These are carried to the M10 device pass.
+
+## M9 checklist additions
+- [ ] Add a favicon `<link>` in `index.html`. `/favicon.ico` currently returns 404.
+- [ ] Add a `<meta name="description">`. This is the cause of Lighthouse SEO 83.
+- [ ] Note: LCP was 2.6 s in the M8 Lighthouse run (lab, throttled mobile). No action yet; re-measure after M9.
