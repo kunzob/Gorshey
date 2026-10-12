@@ -173,6 +173,23 @@ describe('boot-fill rows reserve their filled height (M9 CLS fix)', () => {
   });
 });
 
+describe('kora ring starts empty before JS runs (M10 F7)', () => {
+  // Without these defaults the skeleton draws the fill as a full gold circle until setRing() runs.
+  const CIRCUMFERENCE = 2 * Math.PI * 45; // r=45 in index.html and KoraRing.ts
+
+  it('.ring-fill declares a dash array and offset at least one circumference long, so no stroke shows', () => {
+    const fill = RULES.find((r) => r.selectors.length === 1 && r.selectors[0] === '.ring-fill' && r.at.length === 0)!;
+    const dash = Number(decl(fill.body, 'stroke-dasharray'));
+    const offset = Number(decl(fill.body, 'stroke-dashoffset'));
+    expect(dash).toBeGreaterThanOrEqual(CIRCUMFERENCE);
+    expect(offset).toBe(dash);
+  });
+
+  it('the ring radius in the markup is the one the defaults were sized for', () => {
+    expect(HTML).toMatch(/<circle id="ring-fill" class="ring-fill" cx="50" cy="50" r="45">/);
+  });
+});
+
 describe('Latin-only typography never reaches Tibetan text (M9)', () => {
   // Tibetan can appear in any element whose lang is bo, including elements that inherit it from <html lang="bo">.
   // So tracking and case transforms are allowed only on selectors scoped to :lang(en).

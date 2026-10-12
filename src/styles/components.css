@@ -200,6 +200,10 @@
   stroke: var(--color-gold);
   stroke-width: 3;
   stroke-linecap: round;
+  /* Empty until setRing() runs: one dash and one gap of at least the circumference (2 x pi x 45 = 282.74), offset by
+     a full dash, so the skeleton never shows a full gold ring. setRing() overrides both inline. */
+  stroke-dasharray: 283;
+  stroke-dashoffset: 283;
 }
 
 .artwork {
