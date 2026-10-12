@@ -311,9 +311,14 @@ html:not([data-lang-ready]) .player {
   border-radius: 999px;
   background: rgba(201, 162, 74, 0.18);
   color: var(--color-whitewash);
-  font: inherit;
   white-space: nowrap;
   cursor: pointer;
+}
+
+/* Only the real button needs to inherit the page font (UA styles give buttons their own). The sizer spans inherit
+   naturally, so :lang(bo) still reaches the Tibetan sizers and the pill is sized with each label's own font. */
+button.play {
+  font: inherit;
 }
 
 .nextup {

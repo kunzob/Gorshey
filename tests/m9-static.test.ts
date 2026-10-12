@@ -224,6 +224,14 @@ describe('play/pause never resizes the strip (M10 F6)', () => {
     expect(decl(cell.body, 'grid-area')).toBe('1 / 1');
   });
 
+  it('sizers render each label in its own language font: font: inherit applies to the button only (M10 F6 follow-up)', () => {
+    // `.play { font: inherit }` matched the sizer spans too and, at equal specificity and later in the cascade, beat
+    // :lang(bo), so in en mode the Tibetan sizers fell back to a narrow font and the pill was 92 px instead of 140 px.
+    expect(decl(own('.play')!.body, 'font')).toBeNull();
+    expect(decl(own('.play')!.body, 'font-family')).toBeNull();
+    expect(decl(own('button.play')!.body, 'font')).toBe('inherit');
+  });
+
   it('sizers keep their box (visibility, not display) and never take a click', () => {
     const s = own('.play-sizer')!;
     expect(decl(s.body, 'visibility')).toBe('hidden');
