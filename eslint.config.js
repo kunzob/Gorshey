@@ -18,7 +18,8 @@ const noNewDate = {
 };
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'node_modules/**', 'media/**', '.claude/**'] },
+  // scratch/ holds throwaway measurement scripts and generated builds; it must never break lint.
+  { ignores: ['dist/**', 'node_modules/**', 'media/**', '.claude/**', 'scratch/**'] },
   ...tseslint.configs.recommended,
   {
     files: ['**/*.{ts,js}'],

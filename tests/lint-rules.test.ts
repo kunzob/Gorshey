@@ -32,3 +32,15 @@ describe('no code-execution sinks (M10)', () => {
     expect(ids).toEqual([]);
   });
 });
+
+describe('scratch files can never break lint (M10)', () => {
+  it('scratch/** is ignored by the project config', async () => {
+    expect(await eslint.isPathIgnored('scratch/m10/measure.mjs')).toBe(true);
+    expect(await eslint.isPathIgnored('scratch/any/build/assets/index.js')).toBe(true);
+  });
+
+  it('tools/ and src/ are still linted', async () => {
+    expect(await eslint.isPathIgnored('tools/e2e.mjs')).toBe(false);
+    expect(await eslint.isPathIgnored('src/main.ts')).toBe(false);
+  });
+});
