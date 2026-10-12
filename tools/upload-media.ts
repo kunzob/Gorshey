@@ -1,9 +1,13 @@
 // npm run upload — run by Kunshe, never by the agent. Backend = STORAGE_BACKEND (default supabase).
-// Secrets are read at runtime from gitignored files; their values never appear in code or logs.
-//   supabase: tools/.supabase-service-key.env  → SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
-//   r2:       tools/.r2-credentials.env        → R2_ENDPOINT (signing is not implemented yet)
+// Secrets are read at runtime from a per-user folder OUTSIDE the repository (tools/secrets.ts):
+//   GORSHEY_SECRETS_DIR, else %APPDATA%\gorshey (Windows) or ~/.config/gorshey (elsewhere)
+//   supabase: supabase-service-key.env  → SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+//   r2:       r2-credentials.env        → R2_ENDPOINT (signing is not implemented yet)
+// The tool refuses to run while that folder, or any credentials file, is inside the repository.
+// Values never appear in code or logs.
 import { createClient } from '@supabase/supabase-js';
 import { readFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { SourceConfig, TrackFacts } from './build-manifest';
@@ -13,6 +17,7 @@ import { readBytes } from './media';
 import { createR2Backend } from './storage/r2';
 import { createSupabaseBackend } from './storage/supabase';
 import { ensureUploaded, type StorageBackend } from './storage/types';
+import { credentialPath, gitLsFiles, preflightSecrets } from './secrets';
 
 const BUCKET = 'gorshey-media';
 
@@ -54,7 +59,7 @@ export function planUploads(
   return items;
 }
 
-// Minimal KEY=VALUE parser for the gitignored credential files. Comments and blanks skipped.
+// Minimal KEY=VALUE parser for the credential files (outside the repo). Comments and blanks skipped.
 export function parseEnvFile(text: string): Record<string, string> {
   const env: Record<string, string> = {};
   for (const raw of text.split(/\r?\n/)) {
@@ -97,10 +102,10 @@ function required(env: Record<string, string>, key: string, file: string): strin
   return value;
 }
 
-async function createBackend(name: BackendName, root: string): Promise<StorageBackend> {
+async function createBackend(name: BackendName, secretsDir: string): Promise<StorageBackend> {
   if (name === 'supabase') {
-    const file = 'tools/.supabase-service-key.env';
-    const env = parseEnvFile(await readFile(resolve(root, file), 'utf8'));
+    const file = credentialPath(secretsDir, 'supabase');
+    const env = parseEnvFile(await readFile(file, 'utf8'));
     const client = createClient(
       validateSupabaseUrl(required(env, 'SUPABASE_URL', file)),
       required(env, 'SUPABASE_SERVICE_ROLE_KEY', file),
@@ -108,8 +113,8 @@ async function createBackend(name: BackendName, root: string): Promise<StorageBa
     );
     return createSupabaseBackend({ client, bucket: BUCKET, readFile: readBytes });
   }
-  const file = 'tools/.r2-credentials.env';
-  const env = parseEnvFile(await readFile(resolve(root, file), 'utf8'));
+  const file = credentialPath(secretsDir, 'r2');
+  const env = parseEnvFile(await readFile(file, 'utf8'));
   return createR2Backend({
     endpoint: required(env, 'R2_ENDPOINT', file),
     bucket: BUCKET,
@@ -120,9 +125,17 @@ async function createBackend(name: BackendName, root: string): Promise<StorageBa
 async function main(): Promise<void> {
   const name = resolveBackendName(process.env);
   const root = process.cwd();
+  // Before anything else: refuse to run while credentials sit inside the repository.
+  const secretsDir = preflightSecrets({
+    env: process.env,
+    platform: process.platform,
+    home: homedir(),
+    repoRoot: root,
+    lsFiles: gitLsFiles(root),
+  });
   const source = parseSource(await readFile(resolve(root, 'tools/tracks.source.yaml'), 'utf8'));
   const facts = await gatherFacts(source, root);
-  const backend = await createBackend(name, root);
+  const backend = await createBackend(name, secretsDir);
 
   let uploaded = 0;
   let skipped = 0;

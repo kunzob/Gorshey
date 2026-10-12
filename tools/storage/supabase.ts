@@ -1,5 +1,5 @@
 // Supabase Storage backend (current). Uses the service-role client supplied by the caller;
-// upload-media.ts is responsible for loading that key from tools/.supabase-service-key.env.
+// upload-media.ts loads that key from the secrets folder outside the repo (tools/secrets.ts).
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { type ReadFile, type StorageBackend } from './types';
 

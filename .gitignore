@@ -8,6 +8,10 @@ coverage/
 media/
 tools/.r2-credentials*
 tools/.supabase-service-key*
+# Credentials belong in the per-user secrets folder OUTSIDE the repo (GORSHEY_SECRETS_DIR, %APPDATA%\gorshey or
+# ~/.config/gorshey). Ignore any copy dropped inside the repo by mistake, under any name variant.
+**/*supabase-service-key*
+**/*r2-credentials*
 
 # Design mockups and scratch work (not part of the app)
 scratch/
