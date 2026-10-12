@@ -15,7 +15,7 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [x] M7  Media Session: accepted by Kunshe (evidence: 8283f6f, c4562db; live checks confirmed)
 - [x] M8  PWA (manifest + service worker): accepted by Kunshe (evidence: 0029194, c2c2d0b; live checks confirmed)
 - [x] M9  Theme polish: accepted by Kunshe (evidence: 1353a96, ed0535c, caa5509, ab57b34; Lighthouse and visual review confirmed)
-- [ ] M10 QA (devices, Tibetan rendering, security review) (automated pass and security review done; findings F1-F8 await Kunshe; device matrix pending)
+- [ ] M10 QA (devices, Tibetan rendering, security review) (automated pass, security review and fixes F2-F8 done; F14 open; device matrix pending)
 - [ ] M11 Deploy
 
 ## Decisions made during the build
@@ -413,14 +413,14 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 
 | id | severity | evidence | recommended action | status |
 | :--- | :--- | :--- | :--- | :--- |
-| F1 | Medium (process) | The agent's recursive secret grep over `tools/` read `tools/.supabase-service-key.env` (forbidden by CLAUDE.md). Output was masked, but 3 characters of the key body after `sb_secret_` reached the session. The file is untracked and git-ignored; history is clean. | Rotate the Supabase secret key (cheap). Scripts now use `git grep` (tracked files only) or explicit excludes. | open (Kunshe) |
-| F2 | Low | Presence `connect()` is wrapped in try/catch only on the first `setListening`. When `transport.subscribe()` throws (stubbed or CSP-blocked WebSocket), the backoff timer and `onOnline` paths raise an uncaught exception. Playback unaffected; presence recovers via the 10 s subscribe timeout. Seen in `scratch/m10/csp-stubbed.json`. | Catch around `tr.subscribe` in `connect()` and call `failTransport()`; red test: subscribe throws on a retry. | proposed |
-| F3 | Low | `parseManifest` accepts any non-empty string for `src` and `artwork` (no scheme check). Mitigated: CSP `media-src`/`img-src` allow only the media origin, and browsers do not run `javascript:` in media or img. | Require absolute `https:` URLs for `src` and `artwork`; red tests for `javascript:`, `data:`, `http:`. | proposed |
-| F4 | Low | `check-dist` matches 4 literal strings. It misses legacy service-role JWTs (the role sits inside the base64 payload), R2 keys and generic tokens. The bundle today has one `sb_publishable_` key and no JWT. | Decode `eyJ…` payloads and fail unless the role is `anon`; add R2 key patterns. | proposed |
-| F5 | Low | Cold bo load: first paint uses `lang="en"` line heights; `applyDocumentLang` then shifts the column 16 px (score 0.0159; Lighthouse-like and DevTools Slow 4G profiles, 3 runs each). bo boot CLS 0.039 in total. Frames: `scratch/m10/bo-first-*`. | Options: A inline head script (needs a CSP hash, second lang writer); B reserve bo heights for all rows (changes the en layout); C hide `.player` until `applyDocumentLang` marks the document ready (locale.ts stays the only writer, no CSP change); D accept (< 0.1). Recommendation: C. | awaiting decision |
-| F6 | Low (UX) | Play makes the column jump: `#position` adds a line (20 px en, 27 px bo) and the pill widens ("Play" to "Pause", +11-12 px), which can wrap a long Tibetan title (strip 138 to 199 px in bo). Not CLS (input). | Reserve one line for `.position` (`min-height: 1lh`) and give the play pill a min-width for its longer label. Changes the paused layout slightly. | proposed |
-| F7 | Low (visual) | Before JS runs, `.ring-fill` has no dash values, so the skeleton shows a full gold ring that then turns grey (frame 1 in `scratch/m10/bo-first-*`). | CSS default `stroke-dasharray`/`stroke-dashoffset` = circumference, so the fill starts empty. | proposed |
-| F8 | Low (a11y) | `#update` is a button with `aria-live` that starts `hidden`; a live region that is not rendered when its content changes is usually not announced. | Announce the update through the existing polite `#status` region (or a persistent visually hidden region); keep the button for the action. | proposed |
+| F1 | Medium (process) | The agent's recursive secret grep over `tools/` read `tools/.supabase-service-key.env` (forbidden by CLAUDE.md). Output was masked, but 3 characters of the key body after `sb_secret_` reached the session. The file is untracked and git-ignored; history is clean. | Rotate the Supabase secret key (cheap). Scripts now use `git grep` (tracked files only) or explicit excludes. | rotation by Kunshe; CLAUDE.md hard rule f27a978 |
+| F2 | Low | Presence `connect()` is wrapped in try/catch only on the first `setListening`. When `transport.subscribe()` throws (stubbed or CSP-blocked WebSocket), the backoff timer and `onOnline` paths raise an uncaught exception. Playback unaffected; presence recovers via the 10 s subscribe timeout. Seen in `scratch/m10/csp-stubbed.json`. | Catch around `tr.subscribe` in `connect()` and call `failTransport()`; red test: subscribe throws on a retry. | fixed d2b3ff4 |
+| F3 | Low | `parseManifest` accepts any non-empty string for `src` and `artwork` (no scheme check). Mitigated: CSP `media-src`/`img-src` allow only the media origin, and browsers do not run `javascript:` in media or img. | Require absolute `https:` URLs for `src` and `artwork`; red tests for `javascript:`, `data:`, `http:`. | fixed 7fdee85 |
+| F4 | Low | `check-dist` matches 4 literal strings. It misses legacy service-role JWTs (the role sits inside the base64 payload), R2 keys and generic tokens. The bundle today has one `sb_publishable_` key and no JWT. | Decode `eyJ…` payloads and fail unless the role is `anon`; add R2 key patterns. | fixed a3c6bca |
+| F5 | Low | Cold bo load: first paint uses `lang="en"` line heights; `applyDocumentLang` then shifts the column 16 px (score 0.0159; Lighthouse-like and DevTools Slow 4G profiles, 3 runs each). bo boot CLS 0.039 in total. Frames: `scratch/m10/bo-first-*`. | Options: A inline head script (needs a CSP hash, second lang writer); B reserve bo heights for all rows (changes the en layout); C hide `.player` until `applyDocumentLang` marks the document ready (locale.ts stays the only writer, no CSP change); D accept (< 0.1). Recommendation: C. | fixed 86bdc32 (option C) |
+| F6 | Low (UX) | Play makes the column jump: `#position` adds a line (20 px en, 27 px bo) and the pill widens ("Play" to "Pause", +11-12 px), which can wrap a long Tibetan title (strip 138 to 199 px in bo). Not CLS (input). | Reserve one line for `.position` (`min-height: 1lh`) and give the play pill a min-width for its longer label. Changes the paused layout slightly. | fixed f6fd6de |
+| F7 | Low (visual) | Before JS runs, `.ring-fill` has no dash values, so the skeleton shows a full gold ring that then turns grey (frame 1 in `scratch/m10/bo-first-*`). | CSS default `stroke-dasharray`/`stroke-dashoffset` = circumference, so the fill starts empty. | fixed 8422568 |
+| F8 | Low (a11y) | `#update` is a button with `aria-live` that starts `hidden`; a live region that is not rendered when its content changes is usually not announced. | Announce the update through the existing polite `#status` region (or a persistent visually hidden region); keep the button for the action. | fixed 1634f90 |
 | F9 | Info | Presence code is 69% of the JS. | Optional: lazy-load the transport on first play (dynamic import). | no action |
 | F10 | Info | Non-text contrast: ring track dim 1.33, gold 1.97; dot maroon 2.95, gold 4.79. Decorative and aria-hidden; state is also in text (play label, badge). All text passes AAA (lowest 8.29). | None required (WCAG 1.4.11 does not apply). | no action |
 | F11 | Info | Dependencies: `npm audit` 0; 3 runtime packages; only install script is esbuild `postinstall` (still unapproved, build fine); `prettier` unused by scripts (`.prettierrc` for editors); `@supabase/supabase-js` dev-only (upload tool), not in the bundle. | None. | no action |
@@ -437,3 +437,54 @@ Process notes (honest record):
 - A commit command piped `npm run lint` into `tail` before `&&`, so a lint failure did not stop the commit of a89e22d.
   The 318 errors were all in `scratch/m10/` (a minified sourcemap build and a scratch script); the committed files were
   lint-clean. The scratch build was deleted and lint is clean.
+
+### M10 decisions and fixes (Kunshe, 2026-10-13)
+- F1: Kunshe rotates the Supabase secret key. Hard rules added to CLAUDE.md (f27a978): no recursive grep/rg/find/cat
+  over `tools/` or any secret-holding directory, `git grep` / `git ls-files` only; never print or quote any part of a
+  key; gate commands are never piped into something that hides their exit code; browser scripts stub WebSocket.
+- `scratch/**` is ignored by ESLint (36d436e, with a test).
+- One finding per commit, tests first with a full red run each time:
+
+| id | commit | red run | change | before -> after |
+| :--- | :--- | :--- | :--- | :--- |
+| F2 | d2b3ff4 | 3 failing | `connect()` catches a throwing `subscribe()` and calls `failTransport()` (backoff) on every path | browser: uncaught "WebSocket not available" -> 0 exceptions (csp-stubbed-final) |
+| F3 | 7fdee85 | 27 failing | `src`/`artwork`: absolute `https:` with host and no credentials, or `/path`; refuses javascript:, data:, blob:, http:, `//`, bare relative, malformed, whitespace, controls, backslash; error never echoes the value | all fixtures and the dev manifest already https |
+| F4 | a3c6bca | 9 failing | check-dist decodes JWT payloads (fails on role=service_role, anon allowed), flags R2/AWS/Cloudflare names and presigned-URL params; prints names only | 0 hits on the current dist |
+| F7 | 8422568 | 1 failing | `.ring-fill` default `stroke-dasharray`/`-dashoffset: 283` | skeleton ring empty instead of full gold |
+| F8 | 1634f90 | 6 failing | update announced once via a visually hidden span in `#status` (existing `update.available`, tagged with the UI language); `aria-live` removed from the button; `.sr-only` utility | no new string |
+| F6 | f6fd6de | 6 failing | `.position` `min-height: 1lh`; `.controls` grid with aria-hidden sizer spans for every play/pause label in every locale (`i18n.tFor`) | column jump on play/pause 10 px (en) / 13.7 px (bo) -> 0 px; strip +20/+27 px -> 0; pill +11-12 px -> 0 (375x667 and 1280x800) |
+| F5 | 86bdc32 | 6 failing | option C: `data-lang-ready` set by `applyDocumentLang` (locale.ts still the only lang writer) and on boot failure; `html:not([data-lang-ready]) .player { visibility: hidden }`; 6 s zero-length visibility fallback if JS never runs (exempt from reduced motion); `<noscript>` links same-origin `/noscript.css` (CSP unchanged; not precached) | see below |
+
+- F5 numbers (headless proxy, not Lighthouse; cold load, cache off, 375x667, 4x CPU; median of 3):
+
+| profile | locale | CLS before | CLS after | vertical before -> after | LCP before -> after | FCP before -> after |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| Lighthouse-like (150 ms, 1.6 Mbit/s) | bo | 0.0389 | 0.0153 | 0.0159 -> 0 | 1,704 -> 1,732 ms | 792 -> 664 ms |
+| Lighthouse-like | en | 0.0139 | 0.0043 | 0 -> 0 | 1,700 -> 1,784 ms | 788 -> 664 ms |
+| DevTools Slow 4G (562.5 ms, 1.4 Mbit/s) | bo | 0.0309 | 0.0153 | 0.0159 -> 0 | 4,676 -> 4,728 ms | 1,620 -> 1,456 ms |
+| DevTools Slow 4G | en | 0.0139 | 0.0043 | 0 -> 0 | 4,668 -> 4,680 ms | 1,632 -> 1,444 ms |
+
+  LCP is the artwork in every run; the +12..84 ms is within run-to-run spread. FCP is earlier because the hero paints
+  first while the player waits for the language. The remaining CLS is horizontal only ("—" widening to text).
+  Checks: JS file blocked -> player hidden at 1.5 s, visible by 7.5 s, with and without reduced motion; JS disabled ->
+  visible at once, 0 CSP violations; normal bo boot -> visible, lang bo, 0 violations; e2e 18/18; 375x667 fits in both
+  locales (no page scroll).
+- Note on F6: the pill is now as wide as the longest label (the Tibetan pause label), so the English pill is wider
+  than before; the reserved position line adds one empty line under the artist while paused. Approved trade-off.
+
+### New finding (M10, after the decisions)
+
+| id | severity | evidence | recommended action | status |
+| :--- | :--- | :--- | :--- | :--- |
+| F14 | Medium (correctness, pre-existing since M5) | Before the first play, and while paused, the strip shows track index 0: `render.ts` starts with `trackIdx = 0` and only the engine's `track` event (on play) changes it. Next-up is computed from the clock. So whenever the schedule is in track 2, the title and next-up name the same song, and pressing play switches the title (seen during the F6 measurement: "Song of Mani" paused, "Auspicious Welcome 0:00 / 4:05" on play, then the cycle wrapped). | Paint the scheduled track from the clock at boot and on each paused tick or track boundary (resolve, never idx+1), without touching the engine. Red tests first. | open, needs approval |
+
+### Proposal (not implemented): keep secret files outside the repo folder (decide at M11)
+1. Recommended: a per-user secrets directory outside the working tree, e.g. `%APPDATA%\gorshey\` on Windows and
+   `~/.config/gorshey/` elsewhere, holding `supabase-service-key.env` and `r2-credentials.env`. `tools/upload-media.ts`
+   reads the directory from `GORSHEY_SECRETS_DIR` (default: the per-user path) and refuses any path inside the repo.
+   No agent search of the repo can reach the files; `.gitignore` and the settings deny list stay as defence in depth.
+2. Stronger: no file at all. Keep the keys in a password manager or the OS store and inject them only for the upload
+   run, e.g. `op run --env-file=...` (1Password CLI) or Windows Credential Manager via PowerShell SecretManagement;
+   the upload tool reads `process.env` only.
+3. Either way: move the two existing files out, rotate the keys once more after the move, and add a check to
+   `npm run upload` that fails if a credentials file exists anywhere under the repo.

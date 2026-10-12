@@ -55,6 +55,8 @@ Cache rules (later rules add to the security headers):
 | `/assets/(.*)` | `public, max-age=31536000, immutable` | content-hashed file names |
 
 Notes:
+- **No inline `<style>` even in `<noscript>`** (M10 F5): the JS-less reveal is the same-origin `/noscript.css`, so
+  `style-src 'self'` covers it.
 - **No `'unsafe-inline'`.** `dist/index.html` has no inline script or style; the ring progress is set through CSSOM
   (`el.style.x = …`), which `style-src` does not govern. The M10 test found zero violations (below).
 - **Permissions-Policy** deliberately does not mention `autoplay`, `fullscreen` or media session (not a policy feature).
