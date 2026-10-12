@@ -14,7 +14,7 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [x] M6  Presence (Supabase): accepted by Kunshe (evidence: 20053de, dd32f79; live checks confirmed)
 - [x] M7  Media Session: accepted by Kunshe (evidence: 8283f6f, c4562db; live checks confirmed)
 - [x] M8  PWA (manifest + service worker): accepted by Kunshe (evidence: 0029194, c2c2d0b; live checks confirmed)
-- [ ] M9  Theme polish (built; Kunshe visual review and Lighthouse rerun pending)
+- [x] M9  Theme polish: accepted by Kunshe (evidence: 1353a96, ed0535c, caa5509, ab57b34; Lighthouse and visual review confirmed)
 - [ ] M10 QA (devices, Tibetan rendering, security review)
 - [ ] M11 Deploy
 
@@ -141,6 +141,13 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 ## M10 checklist additions
 - [ ] Lighthouse CLS check on the production build (mobile emulation), with the Tibetan web font swapping in. Target: CLS ≈ 0.
 - [ ] Layout at 375x667 in both languages: no page scroll, play button and next-up line fully visible (round 4 check).
+- [ ] (from M9) CLS after play: `#position` goes from empty to "m:ss / m:ss" when ticks start. Measure; reserve its
+  height if the shift lands more than 500 ms after the click.
+- [ ] (from M9) bo first visit on Slow 4G: index.html ships `lang="en"`, so a paint before the module runs would lay
+  out bo rows with Latin line heights. Watch for a vertical jump of the brand, next-up line and footer.
+- [ ] (from M9) Lint: add `no-eval` and `no-new-func` to the ESLint config.
+- [ ] (from M9) SEO: check `robots.txt` (Lighthouse SEO 92 after M9) for the remaining points.
+- [ ] (from M8/M9) Phone pass: install, offline and lock-screen behaviour on iOS Safari and Android Chrome.
 
 ## M5b visual design (Direction B, Lantern Column)
 - Built: full-bleed hero (`public/hero/hero-potala.svg`, 4,420 bytes, one `<img>` slot, no runtime filter), a scrim, a
@@ -251,6 +258,9 @@ The agent updates this file at the end of every task. Newest notes at the bottom
   stay within the 16 KB artwork reserve in `tools/check-budget.mjs` (or raise the reserve deliberately).
 - [ ] Resolve the licence of the lock-screen artwork source (`potoala_palace.png`, user-provided wallpaper; see
   `public/ASSETS.md`). Replace the image if the licence cannot be confirmed.
+- [ ] (from M9) Licences: track licences (deferred by Kunshe) and the covers that replace the placeholder artwork.
+- [ ] (from M9) Footer facts: confirm "Marpo Ri · 3,700 m · 1645" (and the bo `footer.line`) before launch.
+- [ ] (from M9) `npm run i18n:review` reports zero unreviewed bo strings (M11 task requirement).
 
 ## M8 PWA
 - No new dependency: `vite-plugin-pwa` 2.0.0 and workbox 7.4.1 are devDependencies since M0 (42ccfde). Build-time only;
@@ -368,3 +378,15 @@ The agent updates this file at the end of every task. Newest notes at the bottom
   `scratch/m9/shoot.mjs`; reports `shots-report.json`, `perf-proxy.json`; red run `red-run.txt`.
 - CLS fix artefacts: red run `red-run-cls.txt` (3 failing); row measurements `rows-before.json`, `rows-after.json`;
   proxy `perf-proxy-after.json`; `375x667-{en,bo}-paused-{before,after}-cls.png`. Tests after: 506 passing.
+
+## M9 evidence
+- Commits: 1353a96 (theme polish, artwork load handling, budget check), ed0535c (docs), caa5509 (boot-fill row
+  heights), ab57b34 (docs: CLS resolved).
+- **Accepted by Kunshe (2026-10-13).** Lighthouse mobile, run by Kunshe: Performance 97, Accessibility 100, Best Practices
+  100, SEO 92 (83 in M8), CLS 0.011, LCP 2.6 s.
+- Headless CLS proxy (not Lighthouse): 0.0139 (en), 0.0149 (bo); 0.121 / 0.126 before the boot-fill fix.
+- Page-load budget (`tools/check-budget.mjs`): 49.3 KB of 60 KB, including the 16 KB artwork reserve.
+- Carried to M10: CLS after play (`#position`), bo first visit on Slow 4G, `no-eval` / `no-new-func` lint, robots.txt
+  for the remaining SEO points, phone install/offline/lock-screen pass (see "M10 checklist additions").
+- Carried to M11: artwork replacement (16 KB reserve), licences, footer facts, Vercel Cache-Control headers,
+  `i18n:review` zero (see "M11 checklist additions").
