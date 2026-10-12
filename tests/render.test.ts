@@ -8,6 +8,7 @@ import { applyDocumentLang } from '../src/ui/locale';
 import { mountPlayer, showBootFailure } from '../src/ui/render';
 import { reloadWhenOnline } from '../src/ui/freshManifest';
 import { onUpdateClick } from '../src/ui/updatePrompt';
+import { startClock } from '../src/ui/ClockView';
 
 const EPOCH_MS = Date.parse('2026-01-01T00:00:00Z');
 const REAL: Manifest = {
@@ -403,6 +404,7 @@ describe('artwork in the ring', () => {
   it('a new URL hides the image again until it loads', () => {
     remountWithArt(ART_A, ART_B);
     $('artwork').dispatchEvent(new Event('load'));
+    ctx.engine.emit('state', 'playing'); // M10 F14: the engine's track counts only while it is active
     ctx.engine.emit('track', 1);
     expect($('artwork').getAttribute('src')).toBe(ART_B);
     expect($('artwork').hidden).toBe(true);
@@ -413,6 +415,7 @@ describe('artwork in the ring', () => {
   it('a new URL after a failure gets a fresh chance', () => {
     remountWithArt(ART_A, ART_B);
     $('artwork').dispatchEvent(new Event('error'));
+    ctx.engine.emit('state', 'playing');
     ctx.engine.emit('track', 1);
     $('artwork').dispatchEvent(new Event('load'));
     expect($('artwork').hidden).toBe(false);
@@ -420,6 +423,7 @@ describe('artwork in the ring', () => {
 
   it('a load event that arrives after the track lost its artwork does not show the image', () => {
     remountWithArt(ART_A, undefined);
+    ctx.engine.emit('state', 'playing');
     ctx.engine.emit('track', 1);
     $('artwork').dispatchEvent(new Event('load'));
     expect($('artwork').hidden).toBe(true);
@@ -576,6 +580,134 @@ describe('update prompt button', () => {
     ctx.player.showUpdate();
     expect($('update').textContent).toBe(t('update.available'));
     expect($('update').textContent).toMatch(/[ༀ-࿿]/);
+  });
+});
+
+describe('the strip shows the scheduled track before the first play and while paused (M10 F14)', () => {
+  // REAL: track 0 is 211.255167 s, track 1 245.179521 s. 300 s after the epoch the schedule is in track 1.
+  const ART = ['https://cdn.test/art/t0.jpg', 'https://cdn.test/art/t1.jpg'];
+  const TRACKS = REAL.tracks.map((tr, i) => ({ ...tr, artwork: ART[i] }));
+  let nowMs: number;
+  function mountAt(ms: number, tracks = TRACKS): void {
+    nowMs = ms;
+    ctx.player.unmount();
+    mountSkeleton();
+    const engine = new FakeEngine();
+    const player = mountPlayer({
+      engine: engine as unknown as AudioEngine,
+      manifest: { ...REAL, tracks, totalDuration: tracks.reduce((a, t) => a + t.duration, 0) },
+      now: () => nowMs,
+      offline: () => false,
+    });
+    ctx = { engine, player };
+  }
+  const titleText = (): string => $('title').textContent ?? '';
+  const nextText = (): string => $('nextup').textContent ?? '';
+
+  it('schedule in track 0: title, artist, artwork and next-up follow the clock', () => {
+    mountAt(EPOCH_MS + 50_000);
+    expect(titleText()).toBe(REAL.tracks[0]!.title.bo);
+    expect($('artwork').getAttribute('src')).toBe(ART[0]);
+    expect(nextText()).toContain(REAL.tracks[1]!.title.en);
+  });
+
+  it('schedule in track 1 before any play: shows track 1, not index 0, and next-up is track 0', () => {
+    mountAt(EPOCH_MS + 300_000);
+    expect(titleText()).toBe(REAL.tracks[1]!.title.bo);
+    expect($('subtitle').textContent).toBe(REAL.tracks[1]!.title.en);
+    expect($('artist').textContent).toBe(REAL.tracks[1]!.artist.en);
+    expect($('artwork').getAttribute('src')).toBe(ART[1]);
+    expect(nextText()).toContain(REAL.tracks[0]!.title.en);
+    expect(nextText()).not.toContain(REAL.tracks[1]!.title.en);
+  });
+
+  it('while paused, the clock tick repaints at the boundary (artwork keeps the M9 load rules)', () => {
+    mountAt(EPOCH_MS + 211_000); // 0.255 s before the end of track 0
+    $('artwork').dispatchEvent(new Event('load'));
+    expect($('artwork').hidden).toBe(false);
+    nowMs = EPOCH_MS + 211_256; // exactly past the boundary
+    ctx.player.onClockTick();
+    expect(titleText()).toBe(REAL.tracks[1]!.title.bo);
+    expect(nextText()).toContain(REAL.tracks[0]!.title.en);
+    expect($('artwork').getAttribute('src')).toBe(ART[1]);
+    expect($('artwork').hidden).toBe(true); // new URL: hidden until it loads
+    $('artwork').dispatchEvent(new Event('load'));
+    expect($('artwork').hidden).toBe(false);
+  });
+
+  it('a tick inside the same track repaints nothing (no flicker, artwork stays shown)', () => {
+    mountAt(EPOCH_MS + 50_000);
+    $('artwork').dispatchEvent(new Event('load'));
+    const before = $('strip').innerHTML;
+    nowMs += 1000;
+    ctx.player.onClockTick();
+    expect($('strip').innerHTML).toBe(before);
+    expect($('artwork').hidden).toBe(false);
+  });
+
+  it('while the engine is active, its track is authoritative and the clock tick does not override it', () => {
+    mountAt(EPOCH_MS + 300_000); // clock: track 1
+    ctx.engine.emit('track', 0); // engine still on track 0 (e.g. finishing it)
+    ctx.engine.emit('state', 'playing');
+    expect(titleText()).toBe(REAL.tracks[0]!.title.bo);
+    expect(nextText()).toContain(REAL.tracks[1]!.title.en);
+    ctx.player.onClockTick();
+    expect(titleText()).toBe(REAL.tracks[0]!.title.bo);
+  });
+
+  it('pausing hands the strip back to the clock at once', () => {
+    mountAt(EPOCH_MS + 300_000);
+    ctx.engine.emit('track', 0);
+    ctx.engine.emit('state', 'playing');
+    ctx.engine.emit('state', 'paused');
+    expect(titleText()).toBe(REAL.tracks[1]!.title.bo);
+    expect(nextText()).toContain(REAL.tracks[0]!.title.en);
+  });
+
+  it('a track event while idle does not change the strip (the engine is not authoritative then)', () => {
+    mountAt(EPOCH_MS + 50_000);
+    ctx.engine.emit('track', 1);
+    expect(titleText()).toBe(REAL.tracks[0]!.title.bo);
+  });
+
+  it('a locale switch while paused keeps the scheduled track', () => {
+    mountAt(EPOCH_MS + 300_000);
+    setLocale('bo');
+    expect(titleText()).toBe(REAL.tracks[1]!.title.bo);
+    expect($('subtitle').textContent).toBe(REAL.tracks[1]!.title.en);
+    expect($('artist').textContent).toBe(REAL.tracks[1]!.artist.bo);
+    expect(nextText()).toContain(REAL.tracks[0]!.title.bo);
+    setLocale('en');
+  });
+
+  it('title and next-up never name the same song, at any second of the loop', () => {
+    for (let s = 0; s < 460; s += 7) {
+      mountAt(EPOCH_MS + s * 1000);
+      const shown = REAL.tracks.findIndex((tr) => tr.title.bo === titleText());
+      expect(nextText(), `at ${s} s`).not.toContain(REAL.tracks[shown]!.title.en);
+    }
+  });
+
+  it('a one-track manifest may name the same song as next', () => {
+    mountAt(EPOCH_MS + 5000, [TRACKS[0]!]);
+    expect(titleText()).toBe(REAL.tracks[0]!.title.bo);
+    expect(nextText()).toContain(REAL.tracks[0]!.title.en);
+  });
+});
+
+describe('the clock view drives the paused repaint (M10 F14)', () => {
+  it('startClock calls onTick after each paint, once a second, and stops cleanly', () => {
+    vi.useFakeTimers();
+    const el = document.createElement('time');
+    const onTick = vi.fn();
+    const stop = startClock(el, () => EPOCH_MS, onTick);
+    expect(onTick).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(3000);
+    expect(onTick).toHaveBeenCalledTimes(4);
+    stop();
+    vi.advanceTimersByTime(3000);
+    expect(onTick).toHaveBeenCalledTimes(4);
+    vi.useRealTimers();
   });
 });
 

@@ -7,7 +7,8 @@ import { refs } from './dom';
 import { applyDocumentLang } from './locale';
 import { setRing } from './KoraRing';
 import { localeToggleTarget } from './LocaleToggle';
-import { nextUpRuns, playLabelKey, positionLabel, statusKey } from './view';
+import { buildIndex, shownTracks } from '../core/schedule';
+import { nextUpRunsFor, playLabelKey, positionLabel, statusKey } from './view';
 
 /** Replaces an element's children with one span per run, each tagged with its language. */
 function writeRuns(el: HTMLElement, runs: LangRun[]): void {
@@ -62,6 +63,8 @@ export interface Player {
   unmount(): void;
   /** Shows the "update available" button (M8). Its click is wired in updatePrompt.ts. */
   showUpdate(): void;
+  /** Called on the clock's once-a-second tick: while not playing, the strip follows the schedule across boundaries. */
+  onClockTick(): void;
 }
 
 export interface PresenceLike {
@@ -78,7 +81,11 @@ export function mountPlayer(opts: {
   const { engine, manifest, now } = opts;
   const r = refs();
   const durations = manifest.tracks.map((tr) => tr.duration);
+  const starts = buildIndex(manifest.tracks);
+  // The strip shows the engine's track while it is active, and the scheduled track otherwise (shownTracks).
+  let engineIdx: number | null = null;
   let trackIdx = 0;
+  let nextIdx = 0;
   let positionSec = 0;
   let state: EngineState = engine.state;
   let offline = opts.offline();
@@ -108,13 +115,26 @@ export function mountPlayer(opts: {
     }
   }
 
-  function paintTrack(locale: Locale): void {
+  const isActive = (): boolean => ACTIVE.includes(state);
+  const shown = (): { trackIdx: number; nextIdx: number } =>
+    shownTracks(now(), manifest.epochMs, starts, isActive() ? engineIdx : null);
+
+  /** Title, artist, artwork and next-up from ONE resolution, so title and next-up can never disagree. */
+  function paintTrack(locale: Locale, s = shown()): void {
+    trackIdx = s.trackIdx;
+    nextIdx = s.nextIdx;
     paintArtwork();
     const runs = titleParts(manifest.tracks[trackIdx]!.title, locale);
     writeRuns(r.title, [runs[0]!]);
     writeRuns(r.subtitle, [runs[1]!]);
     r.artist.textContent = artistFor(locale);
-    writeNextUp(r.nextup, t('player.nextUp'), nextUpRuns(manifest, now(), locale), locale);
+    writeNextUp(r.nextup, t('player.nextUp'), nextUpRunsFor(manifest, nextIdx, locale), locale);
+  }
+
+  /** Repaints the track rows only when what should be shown changed (no flicker within a track). */
+  function syncTrack(): void {
+    const s = shown();
+    if (s.trackIdx !== trackIdx || s.nextIdx !== nextIdx) paintTrack(getLocale(), s);
   }
 
   function paintPlayer(): void {
@@ -159,13 +179,15 @@ export function mountPlayer(opts: {
   }
 
   const offState = engine.on('state', (s) => {
+    const wasActive = isActive();
     state = s;
+    if (wasActive !== isActive()) syncTrack(); // play hands the strip to the engine, pause back to the clock
     paintPlayer();
     paintStatus();
   });
   const offTrack = engine.on('track', (idx) => {
-    trackIdx = idx;
-    paintTrack(getLocale());
+    engineIdx = idx;
+    if (isActive()) syncTrack();
     paintPlayer();
   });
   const offTick = engine.on('tick', (tick) => {
@@ -221,6 +243,9 @@ export function mountPlayer(opts: {
       r.locale.removeEventListener('click', onLocale);
       window.removeEventListener('online', onNetwork);
       window.removeEventListener('offline', onNetwork);
+    },
+    onClockTick(): void {
+      if (!isActive()) syncTrack();
     },
     showUpdate(): void {
       r.update.hidden = false;

@@ -1,6 +1,6 @@
 // Pure view logic: no DOM. Every visible string is a catalog key; this module only chooses which key applies.
 import type { EngineState } from '../audio/AudioEngine';
-import { buildIndex, nextTrackIdx } from '../core/schedule';
+import { buildIndex, shownTracks } from '../core/schedule';
 import type { Manifest } from '../core/types';
 import { formatDuration, titleParts, type LangRun } from '../i18n/i18n';
 import type { Locale } from '../i18n/locales';
@@ -58,6 +58,10 @@ export function positionLabel(positionSec: number, durationSec: number, active: 
 /** Runs for the next track, computed from the clock (resolve at end-of-track + 1 ms), never idx+1. */
 export function nextUpRuns(manifest: Manifest, nowMs: number, locale: Locale): LangRun[] {
   const starts = buildIndex(manifest.tracks);
-  const idx = nextTrackIdx(nowMs, manifest.epochMs, starts);
-  return titleParts(manifest.tracks[idx]!.title, locale);
+  return nextUpRunsFor(manifest, shownTracks(nowMs, manifest.epochMs, starts, null).nextIdx, locale);
+}
+
+/** Runs for a next-up index already resolved by shownTracks (render.ts resolves title and next together). */
+export function nextUpRunsFor(manifest: Manifest, nextIdx: number, locale: Locale): LangRun[] {
+  return titleParts(manifest.tracks[nextIdx]!.title, locale);
 }

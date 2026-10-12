@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildIndex, nextTrackIdx, resolve } from '../src/core/schedule';
+import { buildIndex, nextTrackIdx, resolve, shownTracks } from '../src/core/schedule';
 
 // Exact durations from public/manifest.json (hardcoded on purpose: adding a track later must not change these asserts).
 const REAL_DURATIONS = [211.255167, 245.179521];
@@ -115,5 +115,47 @@ describe('nextTrackIdx (display only: resolve(end of current track + 1 ms))', ()
     const starts = buildIndex([{ duration: 2 }, { duration: 3 }]);
     expect(nextTrackIdx(EPOCH + 2000, EPOCH, starts)).toBe(0); // boundary of track 1 → next is track 0
     expect(nextTrackIdx(EPOCH, EPOCH, starts)).toBe(1); // track 0 at its start → next is track 1
+  });
+});
+
+describe('shownTracks (M10 F14: what the strip shows, from the clock unless the engine is active)', () => {
+  const realStarts = buildIndex(REAL_DURATIONS.map((duration) => ({ duration })));
+  const synth = buildIndex(SYNTH.map((duration) => ({ duration }))); // [0, 2, 5]
+
+  it('schedule in track 0: shows track 0, next is track 1', () => {
+    expect(shownTracks(EPOCH + 50_000, EPOCH, realStarts, null)).toEqual({ trackIdx: 0, nextIdx: 1 });
+  });
+
+  it('schedule in track 1: shows track 1, next wraps to track 0', () => {
+    expect(shownTracks(EPOCH + 300_000, EPOCH, realStarts, null)).toEqual({ trackIdx: 1, nextIdx: 0 });
+  });
+
+  it('exactly at a boundary the new track is shown; one millisecond earlier the old one', () => {
+    expect(shownTracks(EPOCH + 2000, EPOCH, synth, null)).toEqual({ trackIdx: 1, nextIdx: 0 });
+    expect(shownTracks(EPOCH + 1999, EPOCH, synth, null)).toEqual({ trackIdx: 0, nextIdx: 1 });
+    expect(shownTracks(EPOCH + 5000, EPOCH, synth, null)).toEqual({ trackIdx: 0, nextIdx: 1 }); // loop wrap
+  });
+
+  it('a one-track manifest shows the same track as current and next', () => {
+    expect(shownTracks(EPOCH + 3000, EPOCH, buildIndex([{ duration: 10 }]), null)).toEqual({ trackIdx: 0, nextIdx: 0 });
+  });
+
+  it('while the engine is active its track wins, and next follows that track', () => {
+    // clock says track 1 (300 s), engine still finishing track 0 at a boundary
+    expect(shownTracks(EPOCH + 300_000, EPOCH, realStarts, 0)).toEqual({ trackIdx: 0, nextIdx: 1 });
+  });
+
+  it('an engine index outside the playlist is refused', () => {
+    expect(() => shownTracks(EPOCH, EPOCH, synth, 2)).toThrow(RangeError);
+    expect(() => shownTracks(EPOCH, EPOCH, synth, -1)).toThrow(RangeError);
+  });
+
+  it('title and next never name the same track when there is more than one', () => {
+    const three = buildIndex([{ duration: 1.5 }, { duration: 2 }, { duration: 0.25 }]);
+    for (let ms = -4000; ms <= 8000; ms += 50) {
+      const s = shownTracks(EPOCH + ms, EPOCH, three, null);
+      expect(s.nextIdx, `at ${ms} ms`).not.toBe(s.trackIdx);
+      for (const engine of [0, 1, 2]) expect(shownTracks(EPOCH + ms, EPOCH, three, engine).nextIdx).not.toBe(engine);
+    }
   });
 });

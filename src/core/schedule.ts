@@ -30,6 +30,27 @@ export function resolve(nowMs: number, epochMs: number, starts: number[]): Posit
 }
 
 /**
+ * What the player strip shows (display only, never used to advance playback). While the engine is active, its track
+ * is authoritative (pass its index); otherwise (`null`: before the first play, paused, idle) the track scheduled now.
+ * `nextIdx` is resolved 1 ms past the end of the shown track's slot, so it differs from `trackIdx` whenever the
+ * playlist has more than one track.
+ */
+export function shownTracks(
+  nowMs: number,
+  epochMs: number,
+  starts: number[],
+  engineIdx: number | null,
+): { trackIdx: number; nextIdx: number } {
+  const count = starts.length - 1;
+  if (engineIdx !== null && (engineIdx < 0 || engineIdx >= count)) {
+    throw new RangeError(`engine track ${engineIdx} is outside the playlist (0..${count - 1})`);
+  }
+  const trackIdx = engineIdx ?? resolve(nowMs, epochMs, starts).trackIdx;
+  const slotEndMs = epochMs + (starts[trackIdx + 1] as number) * 1000;
+  return { trackIdx, nextIdx: resolve(slotEndMs + 1, epochMs, starts).trackIdx };
+}
+
+/**
  * Index of the track that follows the one playing now (display only, never used to advance playback).
  * Resolves one millisecond past the end of the current track, so the last track wraps to track 0.
  */

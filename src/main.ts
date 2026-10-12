@@ -62,7 +62,7 @@ async function boot(): Promise<void> {
     offline: () => !navigator.onLine,
     presence,
   });
-  const stopClock = startClock(refs().clock, now);
+  const stopClock = startClock(refs().clock, now, () => player.onClockTick());
 
   // PWA: production only (no service worker under npm run dev). The prompt never reloads on its own.
   const updates = initUpdates({

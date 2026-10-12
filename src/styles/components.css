@@ -266,10 +266,16 @@ html:not([data-lang-ready]) .player {
   margin: 0;
 }
 
+/* Exactly two Tibetan lines at every size (gorshey-tibetan §2: min-height + line-clamp, never a fixed height), so a
+   track change, which F14 also paints while paused, can never change the strip's height. */
 .title {
   margin: 0;
   font-size: 1.25rem;
   min-height: calc(2 * 1.9em);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .artist {
@@ -376,7 +382,6 @@ button.play {
 
   .title {
     font-size: 1.1rem;
-    min-height: 1.9em;
   }
 
   .nextup {

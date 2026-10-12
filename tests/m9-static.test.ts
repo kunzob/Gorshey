@@ -207,6 +207,29 @@ describe('no layout in the wrong language before JS (M10 F5, option C)', () => {
   });
 });
 
+describe('the title box never changes height between tracks (M10 F14)', () => {
+  // F14 repaints the title at boundaries while paused, and boots on whichever track is scheduled. A title that wraps
+  // differently from track to track would shift the centred column, so the box is exactly two Tibetan lines.
+  const own = (sel: string, media?: RegExp): Rule | undefined =>
+    RULES.find((r) => r.selectors.length === 1 && r.selectors[0] === sel && (media ? r.at.some((a) => media.test(a)) : r.at.length === 0));
+
+  it('the title reserves two Tibetan lines and clamps at two (gorshey-tibetan §2: min-height + line-clamp)', () => {
+    const t = own('.title')!;
+    expect(decl(t.body, 'min-height')).toBe('calc(2 * 1.9em)');
+    expect(decl(t.body, 'display')).toBe('-webkit-box');
+    expect(decl(t.body, '-webkit-line-clamp')).toBe('2');
+    expect(decl(t.body, '-webkit-box-orient')).toBe('vertical');
+    expect(decl(t.body, 'overflow')).toBe('hidden');
+    expect(decl(t.body, 'height')).toBeNull();
+  });
+
+  it('short screens keep the two-line reservation (only the font size shrinks)', () => {
+    const short = own('.title', /max-height:\s*700px/)!;
+    expect(decl(short.body, 'font-size')).not.toBeNull();
+    expect(decl(short.body, 'min-height')).toBeNull();
+  });
+});
+
 describe('play/pause never resizes the strip (M10 F6)', () => {
   const own = (sel: string): Rule | undefined =>
     RULES.find((r) => r.selectors.length === 1 && r.selectors[0] === sel && r.at.length === 0);
