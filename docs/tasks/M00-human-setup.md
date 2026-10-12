@@ -16,11 +16,14 @@ The agent does not perform these steps. It may explain any of them on request.
   - **Storage bucket for media (current backend, see ARCHITECTURE §0):** Storage → New bucket → name
     `gorshey-media` → **Public bucket: on**. No card required, 1 GB free (~200 tracks at 128–160 kbps).
   - For the upload script in M1, copy the **service-role** key separately into
-    `tools/.supabase-service-key.env` (gitignored, agent-denied, never pasted into chat) — uploads to a
-    bucket need more rights than the public anon key has.
+    `supabase-service-key.env` in the per-user secrets folder **outside the repo** (`%APPDATA%\gorshey` on
+    Windows, `~/.config/gorshey` elsewhere, or `GORSHEY_SECRETS_DIR`; ARCHITECTURE §10). Never paste it into chat.
+    Uploads to a bucket need more rights than the public anon key has. (Until M10 this file lived in
+    `tools/.supabase-service-key.env`; `npm run upload` now refuses to run while it is still there.)
 - Cloudflare R2 — **skip for now.** Only needed when the library approaches ~200 tracks / ~800 MB (ARCHITECTURE §0).
   At that point: add a card, set a Cloudflare budget alert (Billing → Notifications, low threshold), create bucket
-  `gorshey-media`, enable a custom domain, create a scoped API token, save keys in `tools/.r2-credentials.env`.
+  `gorshey-media`, enable a custom domain, create a scoped API token, save keys in `r2-credentials.env` in the
+  same per-user secrets folder outside the repo (ARCHITECTURE §10).
 - Vercel — sign in with GitHub (project import happens in M11).
 
 ## Repo bootstrap

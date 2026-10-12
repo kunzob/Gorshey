@@ -49,7 +49,7 @@ Not automated here: WebKit/Safari, Firefox, real phones, screen readers, two-dev
 | Offline: shell and offline status; reload on reconnect | | | | |
 | Update prompt appears after a deploy; click reloads | | | | |
 | bo first visit on a slow network: player appears in Tibetan with no vertical jump (F5) | | | | |
-| Paused before first play: title matches the scheduled track, not always track 1 (F14, open) | | | | |
+| Paused before first play: title, artist and artwork match the scheduled track; at a track boundary while paused the strip changes without moving (F14) | | | | |
 | Production response headers match docs/SECURITY-HEADERS.md (`curl -I`) | | | | |
 
 Log anything odd in `.claude/skills/gorshey-audio-sync/references/pitfalls.md`.

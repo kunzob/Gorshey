@@ -75,7 +75,8 @@ Modules communicate through small typed event emitters. If you find yourself imp
 
 ## Secrets & safety
 
-- Never read, print, edit, or shell out to view `.env*` files or anything under `tools/.r2-credentials*` /
+- Never read, print, edit, or shell out to view `.env*` files, the per-user secrets folder (`GORSHEY_SECRETS_DIR`,
+  `%APPDATA%\gorshey`, `~/.config/gorshey`; ARCHITECTURE §10), or the old in-repo files `tools/.r2-credentials*` /
   `tools/.supabase-service-key*` — this means no `Read`, and no `Bash` command either (`cat`, `type`,
   `Get-Content`, `printenv`, `env`, piping into `curl`, etc.). Use `.env.example` for variable names.
   `.claude/settings.json` denies the common forms of this, but that list is defense-in-depth, not a sandbox —

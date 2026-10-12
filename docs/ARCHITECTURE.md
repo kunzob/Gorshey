@@ -9,8 +9,9 @@ This records decisions already agreed. Change them only with Kunshe's approval, 
 - **Later:** Cloudflare R2, bucket `gorshey-media` — free egress unconditionally, 10 GB free storage, then
   $0.015/GB-month. Requires a card + a Cloudflare budget alert (set to a low threshold, e.g. $1) at setup time.
 - **Trigger to migrate:** approaching ~800 MB on Supabase, or needing >~200 tracks, whichever comes first.
-- **What migration actually involves:** re-upload existing files to R2 (`tools/upload-r2.ts`, already written),
-  change `cdnBase` in `tools/tracks.source.yaml`, run `npm run manifest`. No application code changes — every
+- **What migration actually involves:** re-upload existing files to R2 (`npm run upload` with
+  `STORAGE_BACKEND=r2`, `tools/upload-media.ts`; R2 request signing is still to be written), change `cdnBase` in
+  `tools/tracks.source.yaml`, run `npm run manifest`. No application code changes — every
   track's `src`/`artwork` field is a full URL (§8), so the player never knows or cares which backend served it.
 - The upload script (`tools/upload-media.ts`) targets whichever backend is active via a `STORAGE_BACKEND` env var
   (`supabase` | `r2`); both code paths are written in M1, so flipping the switch later needs no new code.
@@ -197,3 +198,17 @@ Changing the track list or order shifts everyone's position — that is expected
 - Fonts: `src/styles/fonts.css` (the Tibetan @font-face, scoped to U+0F00-0FFF) and `src/styles/base.css` (the single
   `:lang(bo)` block: line-height 1.9, letter-spacing normal, font-synthesis none). Font provenance: `public/fonts/SOURCE.md`.
 - The position comes from engine ticks (clock-derived). Nothing reads `audio.currentTime` for display.
+
+## 10. Secrets (M10)
+- Upload credentials live in a **per-user folder outside the repository**, never in the working tree:
+  `GORSHEY_SECRETS_DIR` if set, else `%APPDATA%\gorshey` on Windows and `~/.config/gorshey` elsewhere
+  (`tools/secrets.ts`). Files: `supabase-service-key.env` (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) and
+  `r2-credentials.env` (`R2_ENDPOINT`, plus the R2 keys once signing exists).
+- `npm run upload` refuses to run if that folder is the repository or inside it, and while any credentials file is
+  inside the repo (tracked names from `git ls-files` plus an existence check of the known paths; no file is opened).
+  Error messages name files, never values.
+- `.gitignore` ignores any credential-named file anywhere in the repo, as a second line of defence.
+- The browser bundle only ever holds `VITE_SUPABASE_URL` and the publishable `VITE_SUPABASE_ANON_KEY`;
+  `tools/check-dist.mjs` fails the build on service-role JWTs, `sb_secret_`, and R2/AWS/Cloudflare credential names.
+- Agent rules (CLAUDE.md): never read the secrets folder or the old `tools/.…env` files; search with `git grep` /
+  `git ls-files` only; `.claude/settings.json` deny rules cover the folder as defence in depth.

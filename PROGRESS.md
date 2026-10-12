@@ -15,7 +15,7 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [x] M7  Media Session: accepted by Kunshe (evidence: 8283f6f, c4562db; live checks confirmed)
 - [x] M8  PWA (manifest + service worker): accepted by Kunshe (evidence: 0029194, c2c2d0b; live checks confirmed)
 - [x] M9  Theme polish: accepted by Kunshe (evidence: 1353a96, ed0535c, caa5509, ab57b34; Lighthouse and visual review confirmed)
-- [ ] M10 QA (devices, Tibetan rendering, security review) (automated pass, security review and fixes F2-F8 done; F14 open; device matrix pending)
+- [ ] M10 QA (devices, Tibetan rendering, security review) (automated pass, security review, fixes F2-F8 and F14 done, secrets moved out of the repo in code; device matrix pending)
 - [ ] M11 Deploy
 
 ## Decisions made during the build
@@ -90,7 +90,7 @@ The agent updates this file at the end of every task. Newest notes at the bottom
   player.offline. Listed by `npm run i18n:review`. Also the Tibetan track titles (kept verbatim from Kunshe).
   The M11 checklist requires `i18n:review` to report zero.
 - Confirm the manifest version format (content hash vs ISO timestamp in ARCHITECTURE §8).
-- ARCHITECTURE §0 says `tools/upload-r2.ts` is "already written" and names `tools/upload-media.ts`. The file that exists is `upload-media.ts`; no upload-r2 file exists. Fix the doc.
+- [x] ARCHITECTURE §0 named a non-existent `tools/upload-r2.ts`; fixed in M10 (it is `upload-media.ts` with `STORAGE_BACKEND=r2`).
 - Confirm the credential variable names above before Kunshe creates the files.
 - Licensing of tracks: deferred by Kunshe; manifest stays source-agnostic.
 - npm allow-scripts: decide whether to approve esbuild's postinstall (build works without it).
@@ -263,6 +263,10 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [ ] (from M9) Licences: track licences (deferred by Kunshe) and the covers that replace the placeholder artwork.
 - [ ] (from M9) Footer facts: confirm "Marpo Ri · 3,700 m · 1645" (and the bo `footer.line`) before launch.
 - [ ] (from M9) `npm run i18n:review` reports zero unreviewed bo strings (M11 task requirement).
+- [ ] (from M10) Move the two credential files out of the repo into the per-user secrets folder
+  (`%APPDATA%\gorshey\supabase-service-key.env`, `%APPDATA%\gorshey\r2-credentials.env`, or `GORSHEY_SECRETS_DIR`),
+  rotate the Supabase secret key once after the move, add the `.claude/settings.json` deny rules for the folder, and
+  confirm `npm run upload` no longer refuses (it refuses while `tools/.supabase-service-key.env` exists).
 
 ## M8 PWA
 - No new dependency: `vite-plugin-pwa` 2.0.0 and workbox 7.4.1 are devDependencies since M0 (42ccfde). Build-time only;
@@ -476,7 +480,7 @@ Process notes (honest record):
 
 | id | severity | evidence | recommended action | status |
 | :--- | :--- | :--- | :--- | :--- |
-| F14 | Medium (correctness, pre-existing since M5) | Before the first play, and while paused, the strip shows track index 0: `render.ts` starts with `trackIdx = 0` and only the engine's `track` event (on play) changes it. Next-up is computed from the clock. So whenever the schedule is in track 2, the title and next-up name the same song, and pressing play switches the title (seen during the F6 measurement: "Song of Mani" paused, "Auspicious Welcome 0:00 / 4:05" on play, then the cycle wrapped). | Paint the scheduled track from the clock at boot and on each paused tick or track boundary (resolve, never idx+1), without touching the engine. Red tests first. | open, needs approval |
+| F14 | Medium (correctness, pre-existing since M5) | Before the first play, and while paused, the strip shows track index 0: `render.ts` starts with `trackIdx = 0` and only the engine's `track` event (on play) changes it. Next-up is computed from the clock. So whenever the schedule is in track 2, the title and next-up name the same song, and pressing play switches the title (seen during the F6 measurement: "Song of Mani" paused, "Auspicious Welcome 0:00 / 4:05" on play, then the cycle wrapped). | Paint the scheduled track from the clock at boot and on each paused tick or track boundary (resolve, never idx+1), without touching the engine. Red tests first. | fixed 245ab98 |
 
 ### Proposal (not implemented): keep secret files outside the repo folder (decide at M11)
 1. Recommended: a per-user secrets directory outside the working tree, e.g. `%APPDATA%\gorshey\` on Windows and
@@ -488,3 +492,40 @@ Process notes (honest record):
    the upload tool reads `process.env` only.
 3. Either way: move the two existing files out, rotate the keys once more after the move, and add a check to
    `npm run upload` that fails if a credentials file exists anywhere under the repo.
+
+### M10 final items (Kunshe, 2026-10-13)
+- **F14 fixed (245ab98, red run 7 core + 9 DOM failing).** New pure `shownTracks(nowMs, epochMs, starts, engineIdx)`
+  in `src/core/schedule.ts` (same `resolve()` as the engine; 100% branches): the engine's track while it is
+  loading/playing/buffering, the scheduled track otherwise; next is resolved 1 ms past the shown slot, so it equals
+  the title only for a one-track manifest. `render.ts` paints title, artist, artwork and next-up from one call,
+  repaints from the clock when playback stops and on the existing 1 s clock tick (`startClock(el, now, onTick)`),
+  which covers boundaries (within 1 s). AudioEngine unchanged. Three M9 artwork tests now put the fake engine in
+  `playing` before emitting a track (an idle engine's track no longer decides).
+- To keep the boundary repaint from resizing the strip, the title reserves exactly two Tibetan lines at every size
+  (min-height + `-webkit-line-clamp: 2`, gorshey-tibetan §2). A title longer than two lines is clipped with an
+  ellipsis; current titles fit.
+- **F6 follow-up (2ceba2a).** Found while measuring F14: `.play { font: inherit }` also hit the aria-hidden sizer spans
+  and beat `:lang(bo)`, so in en mode the Tibetan sizers used a narrow fallback font and the pill was 92 px (140 px in
+  bo). The F6 report over-claimed "the longest label in either locale": play/pause did not resize it, a locale swap
+  did. `font: inherit` now applies to `button.play` only; the pill is 140 px in both locales.
+- F14 layout numbers (headless Chrome; manifest epoch rewritten in flight so the schedule sits where needed):
+
+| scenario | 375x667 bo | 375x667 en | 1280x800 bo | 1280x800 en |
+| :--- | :--- | :--- | :--- | :--- |
+| A boot inside track 2 (throttled), CLS | 0.0984 -> 0.0153 | 0.0043 | 0.0023 | 0.0008 |
+| B paused, boundary 1->2, CLS after load | 0.0432 -> 0.0021 | 0.0022 | 0.0040 | 0.0042 |
+| B paused, boundary 2->1, CLS after load | 0.0432 -> 0.0021 | 0.0022 | 0.0027 | 0.0004 |
+| C play/pause inside track 2, column jump | 0 px | 0 px | 0 px | 0 px |
+
+  "->" shows before/after the two-line title reservation (F14 without it, then with it). What remains is horizontal
+  only: at boot the "—" placeholders widening into text; at a paused boundary the centred next-up text changing
+  length (left edge moves 43-48 px, height +-1 px rounding). That boundary shift also happens during playback and did
+  since M5; making it exactly 0 needs a design change (left-aligned or fixed-width next-up), not done. e2e 18/18;
+  375x667 and 1280x800 still fit in both locales.
+- **Secrets outside the repo (09ce531).** `tools/secrets.ts`: folder from `GORSHEY_SECRETS_DIR`, else
+  `%APPDATA%\gorshey` / `~/.config/gorshey`; `npm run upload` refuses if the folder is the repo or inside it
+  (case-insensitive on Windows, no prefix trap, symlinks resolved) and while any credentials file is inside the repo
+  (git ls-files names + existence of 8 known paths; nothing is opened). Files: `supabase-service-key.env`,
+  `r2-credentials.env`. `.gitignore` ignores credential-named files anywhere. ARCHITECTURE §10, CLAUDE.md and the
+  M00 human setup updated. Tests: temp directories and fake empty files only (24). Kunshe moves the files, rotates the
+  key once after, and adds the deny rules (M11 checklist).
