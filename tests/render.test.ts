@@ -551,6 +551,47 @@ describe('update prompt button', () => {
   });
 });
 
+describe('update announcement through #status (M10 F8)', () => {
+  it('the button is not a live region (a hidden live region is not announced when it appears)', () => {
+    expect($('update').hasAttribute('aria-live')).toBe(false);
+  });
+
+  it('showUpdate() adds the existing update.available string to the polite #status region, visually hidden', () => {
+    ctx.player.showUpdate();
+    const span = $('status').querySelector('span.sr-only');
+    expect(span, 'announcement span').not.toBeNull();
+    expect(span!.textContent).toBe(t('update.available'));
+    expect((span as HTMLElement).lang).toBe('en');
+    expect($('status').getAttribute('aria-live')).toBe('polite');
+  });
+
+  it('in Tibetan the announcement is the bo catalog string, tagged bo (no new string)', () => {
+    setLocale('bo');
+    ctx.player.showUpdate();
+    const span = $('status').querySelector('span.sr-only') as HTMLElement;
+    expect(span.textContent).toBe(t('update.available'));
+    expect(span.lang).toBe('bo');
+  });
+
+  it('the visible status text is unchanged by the announcement', () => {
+    ctx.player.showUpdate();
+    const visible = [...$('status').childNodes].filter((n) => !(n instanceof HTMLElement && n.classList.contains('sr-only')));
+    expect(visible.map((n) => n.textContent).join('')).toBe('');
+  });
+
+  it('a second showUpdate() does not announce twice', () => {
+    ctx.player.showUpdate();
+    ctx.player.showUpdate();
+    expect($('status').querySelectorAll('span.sr-only')).toHaveLength(1);
+  });
+
+  it('an engine status shown later still appears (the announcement never blocks status)', () => {
+    ctx.player.showUpdate();
+    ctx.engine.emit('state', 'buffering');
+    expect($('status').textContent).toContain(t('player.buffering'));
+  });
+});
+
 describe('boot failure (no track manifest at all)', () => {
   it('offline: shows player.offline, the brand, and an inert play button; no fake numbers', () => {
     ctx.player.unmount();

@@ -173,6 +173,25 @@ describe('boot-fill rows reserve their filled height (M9 CLS fix)', () => {
   });
 });
 
+describe('visually hidden utility for announcements (M10 F8)', () => {
+  it('.sr-only hides content visually but keeps it in the accessibility tree (no display:none or visibility)', () => {
+    const r = RULES.find((x) => x.selectors.length === 1 && x.selectors[0] === '.sr-only' && x.at.length === 0)!;
+    expect(r, '.sr-only rule').toBeDefined();
+    expect(decl(r.body, 'position')).toBe('absolute');
+    expect(decl(r.body, 'width')).toBe('1px');
+    expect(decl(r.body, 'height')).toBe('1px');
+    expect(decl(r.body, 'overflow')).toBe('hidden');
+    expect(decl(r.body, 'clip-path')).toBe('inset(50%)');
+    expect(decl(r.body, 'display')).toBeNull();
+    expect(decl(r.body, 'visibility')).toBeNull();
+  });
+
+  it('the update button carries no aria-live in the markup; #status stays the one polite region', () => {
+    expect(HTML).toMatch(/<button id="update"(?![^>]*aria-live)[^>]*>/);
+    expect(HTML.match(/aria-live=/g)).toHaveLength(1);
+  });
+});
+
 describe('kora ring starts empty before JS runs (M10 F7)', () => {
   // Without these defaults the skeleton draws the fill as a full gold circle until setRing() runs.
   const CIRCUMFERENCE = 2 * Math.PI * 45; // r=45 in index.html and KoraRing.ts

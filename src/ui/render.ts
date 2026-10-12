@@ -61,6 +61,7 @@ export function mountPlayer(opts: {
   let positionSec = 0;
   let state: EngineState = engine.state;
   let offline = opts.offline();
+  let updateAnnounced = false;
 
   const duration = (): number => durations[trackIdx] ?? 0;
   const artistFor = (locale: Locale): string => {
@@ -200,6 +201,15 @@ export function mountPlayer(opts: {
     },
     showUpdate(): void {
       r.update.hidden = false;
+      if (updateAnnounced) return;
+      updateAnnounced = true;
+      // A hidden live region is not announced when it appears, so the existing polite #status region carries the
+      // same catalog string, visually hidden (the button already shows it). A later status write replaces it.
+      const note = document.createElement('span');
+      note.className = 'sr-only';
+      note.lang = getLocale();
+      note.textContent = t('update.available');
+      r.status.append(note);
     },
   };
 }
