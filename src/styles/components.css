@@ -160,6 +160,7 @@
   font-size: 1.25rem;
   font-weight: 600;
   overflow-wrap: anywhere;
+  min-height: 1.9em; /* boot fill: the brand always has a Tibetan run, so reserve one Tibetan line before it arrives */
 }
 
 /* Kora ring over the palace: the circle is rotated so progress starts at 12 o'clock and runs clockwise. */
@@ -289,6 +290,7 @@
   font-size: 0.95rem;
   opacity: 0.9;
   overflow-wrap: anywhere;
+  min-height: 1.9em; /* boot fill: the next title always starts with a Tibetan run; em follows the short-phone size */
 }
 
 .status[aria-live] {
@@ -315,6 +317,7 @@
 
 .footer {
   padding-top: 4px;
+  min-height: calc(4px + 1lh); /* boot fill: one line of its own line height (mono in en, Tibetan 1.9 in bo) */
 }
 
 /* Short phones (375x667 and smaller): tighter rows so the play button and next-up line stay on screen. */

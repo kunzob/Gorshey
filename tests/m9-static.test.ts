@@ -140,6 +140,39 @@ describe('kora ring state (M9)', () => {
   });
 });
 
+describe('boot-fill rows reserve their filled height (M9 CLS fix)', () => {
+  // Measured in headless Chrome: with the track manifest paused, these rows were shorter than after it arrived, and the
+  // vertically centred column moved. Every other row keeps its height between the placeholder and filled states.
+  const TIBETAN_LH = Number(
+    readFileSync('src/styles/base.css', 'utf8').match(/:lang\(bo\)\s*\{[^}]*line-height:\s*([\d.]+)/)![1],
+  );
+  // The row's own rule (single selector), not a grouped reset such as `.eyebrow, ..., .nextup { margin: 0 }`.
+  const top = (sel: string): Rule =>
+    RULES.find((r) => r.selectors.length === 1 && r.selectors[0] === sel && r.at.length === 0)!;
+
+  it('the brand row reserves one Tibetan line (the brand always contains Tibetan)', () => {
+    expect(decl(top('.station').body, 'min-height')).toBe(`${TIBETAN_LH}em`);
+  });
+
+  it('the next-up row reserves one Tibetan line at its own font size, in every layout', () => {
+    expect(decl(top('.nextup').body, 'min-height')).toBe(`${TIBETAN_LH}em`);
+    // The short-phone override changes font-size only; an em reservation follows it, so nothing overrides min-height.
+    for (const r of RULES.filter((x) => x.selectors.includes('.nextup') && x.at.length > 0)) {
+      expect(decl(r.body, 'min-height'), r.at.join(' ')).toBeNull();
+    }
+  });
+
+  it('the footer reserves its padding plus one line of its own line height (mono in en, Tibetan 1.9 in bo)', () => {
+    const footer = top('.footer');
+    const pad = decl(footer.body, 'padding-top');
+    expect(decl(footer.body, 'min-height')).toBe(`calc(${pad} + 1lh)`);
+  });
+
+  it('the Tibetan line height used for the reservations is the :lang(bo) one', () => {
+    expect(TIBETAN_LH).toBeGreaterThanOrEqual(1.9);
+  });
+});
+
 describe('Latin-only typography never reaches Tibetan text (M9)', () => {
   // Tibetan can appear in any element whose lang is bo, including elements that inherit it from <html lang="bo">.
   // So tracking and case transforms are allowed only on selectors scoped to :lang(en).
