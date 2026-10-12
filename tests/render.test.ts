@@ -144,6 +144,34 @@ describe('single lang writer', () => {
   });
 });
 
+describe('player stays hidden until the language is applied (M10 F5)', () => {
+  it('applyDocumentLang marks <html> ready together with the lang', () => {
+    document.documentElement.removeAttribute('data-lang-ready');
+    applyDocumentLang('bo');
+    expect(document.documentElement.lang).toBe('bo');
+    expect(document.documentElement.hasAttribute('data-lang-ready')).toBe(true);
+    applyDocumentLang('en');
+  });
+
+  it('boot failure marks the page ready too, so the player can never stay hidden', () => {
+    ctx.player.unmount();
+    mountSkeleton();
+    document.documentElement.removeAttribute('data-lang-ready');
+    showBootFailure(true);
+    expect(document.documentElement.hasAttribute('data-lang-ready')).toBe(true);
+    ctx = start();
+  });
+
+  it('locale.ts stays the only module that writes <html lang> and the ready flag', () => {
+    const files = ['src/main.ts', 'src/ui/render.ts', 'src/ui/dom.ts', 'src/i18n/i18n.ts', 'src/ui/updatePrompt.ts'];
+    for (const f of files) {
+      const s = readFileSync(f, 'utf8');
+      expect(s, f).not.toMatch(/documentElement\.(lang|dataset|setAttribute|toggleAttribute)/);
+    }
+    expect(readFileSync('src/ui/locale.ts', 'utf8')).toMatch(/documentElement\.lang = code/);
+  });
+});
+
 describe('status line (aria-live)', () => {
   it('the status region is polite and empty while playing', () => {
     expect($('status').getAttribute('aria-live')).toBe('polite');

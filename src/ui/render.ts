@@ -4,6 +4,7 @@ import type { Manifest } from '../core/types';
 import { brandParts, getLocale, onLocaleChange, setLocale, t, tFor, titleParts, type LangRun } from '../i18n/i18n';
 import { LOCALES, type Locale } from '../i18n/locales';
 import { refs } from './dom';
+import { applyDocumentLang } from './locale';
 import { setRing } from './KoraRing';
 import { localeToggleTarget } from './LocaleToggle';
 import { nextUpRuns, playLabelKey, positionLabel, statusKey } from './view';
@@ -241,6 +242,9 @@ export function mountPlayer(opts: {
  * the status only; the placeholders stay, so no track or count is invented, and the play button is inert.
  */
 export function showBootFailure(offline: boolean): void {
+  // Apply the language (and with it the ready flag) here too, so a boot that failed before or around the normal
+  // applyDocumentLang call can never leave the player hidden.
+  applyDocumentLang(getLocale());
   const r = refs();
   writeRuns(r.station, brandParts());
   r.status.textContent = t(offline ? 'player.offline' : 'player.error');

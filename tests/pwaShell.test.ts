@@ -203,3 +203,10 @@ describe('robots.txt (M10: Lighthouse SEO on vite preview)', () => {
     expect(findForbidden(['index.html', 'robots.txt'])).toEqual(['robots.txt']);
   });
 });
+
+describe('noscript stylesheet (M10 F5)', () => {
+  it('is never precached: JS-less visits have no service worker, and the precache count stays the same', () => {
+    expect(read('vite.config.ts')).toMatch(/globIgnores:\s*\[[^\]]*'noscript\.css'/);
+    expect(findForbidden(['index.html', 'noscript.css'])).toEqual(['noscript.css']);
+  });
+});

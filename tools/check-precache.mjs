@@ -13,8 +13,17 @@ export const REQUIRED_ENTRIES = [
 ];
 
 // manifest.json is the TRACK manifest (network-first at runtime, never precached). Media never goes through the SW.
-// robots.txt is for crawlers on the network; a cached copy would only go stale.
-const FORBIDDEN = [/^manifest\.json$/, /^artwork\//, /^audio\//, /\.(mp3|m4a|aac|ogg|opus|wav|flac)$/i, /\.md$/i, /^robots\.txt$/];
+// robots.txt is for crawlers on the network; a cached copy would only go stale. noscript.css serves JS-less visits,
+// which never run the service worker.
+const FORBIDDEN = [
+  /^manifest\.json$/,
+  /^artwork\//,
+  /^audio\//,
+  /\.(mp3|m4a|aac|ogg|opus|wav|flac)$/i,
+  /\.md$/i,
+  /^robots\.txt$/,
+  /^noscript\.css$/,
+];
 
 /** Entry URLs as injected by workbox-build (JSON.stringify output: "url":"..."). */
 export function readPrecacheEntries(swSource) {

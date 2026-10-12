@@ -110,9 +110,18 @@ describe('presence dot (M9)', () => {
   });
 
   it('pulses only under prefers-reduced-motion: no-preference', () => {
+    // M10 F5: a zero-length animation whose keyframes only switch visibility is not motion (the boot fallback that
+    // reveals the player if JS never runs); it must stay active under reduced motion, so it is exempt here.
+    const visibilityOnly = (name: string): boolean => {
+      const body = ALL_CSS.match(new RegExp(`@keyframes\\s+${name}\\s*\\{([\\s\\S]*?\\})\\s*\\}`))?.[1] ?? '';
+      const props = [...body.matchAll(/([a-z-]+)\s*:/g)].map((m) => m[1]);
+      return props.length > 0 && props.every((p) => p === 'visibility');
+    };
     const animated = RULES.filter((r) => {
       const a = decl(r.body, 'animation') ?? decl(r.body, 'animation-name');
-      return a !== null && !/^none\b/.test(a);
+      if (a === null || /^none\b/.test(a)) return false;
+      const [name, duration] = a.split(/\s+/);
+      return !(duration === '0s' && visibilityOnly(name!));
     });
     expect(animated.length).toBeGreaterThan(0);
     for (const r of animated) {
@@ -170,6 +179,31 @@ describe('boot-fill rows reserve their filled height (M9 CLS fix)', () => {
 
   it('the Tibetan line height used for the reservations is the :lang(bo) one', () => {
     expect(TIBETAN_LH).toBeGreaterThanOrEqual(1.9);
+  });
+});
+
+describe('no layout in the wrong language before JS (M10 F5, option C)', () => {
+  const HIDDEN = 'html:not([data-lang-ready]) .player';
+
+  it('the player is hidden with visibility (layout kept, nothing shifts) until <html data-lang-ready>', () => {
+    const r = RULES.find((x) => x.selectors.includes(HIDDEN) && x.at.length === 0)!;
+    expect(r, HIDDEN).toBeDefined();
+    expect(decl(r.body, 'visibility')).toBe('hidden');
+    expect(decl(r.body, 'display')).toBeNull();
+  });
+
+  it('a CSS-only fallback reveals it if JS never runs (zero-length visibility switch, not motion)', () => {
+    const r = RULES.find((x) => x.selectors.includes(HIDDEN) && x.at.length === 0)!;
+    expect(decl(r.body, 'animation')).toMatch(/^lang-ready-fallback 0s 6s forwards !important$/);
+    expect(ALL_CSS).toMatch(/@keyframes\s+lang-ready-fallback\s*\{\s*to\s*\{\s*visibility:\s*visible;?\s*\}\s*\}/);
+  });
+
+  it('without JS a same-origin stylesheet in <noscript> shows the player (no inline style: CSP unchanged)', () => {
+    expect(HTML).toMatch(/<noscript><link rel="stylesheet" href="\/noscript\.css" ?\/?><\/noscript>/);
+    const css = readFileSync('public/noscript.css', 'utf8');
+    expect(css).toMatch(/\.player\s*\{[^}]*visibility:\s*visible\s*!important/);
+    expect(HTML).not.toMatch(/<style[\s>]/);
+    expect(HTML.match(/<script/g)).toHaveLength(1); // only the module entry
   });
 });
 

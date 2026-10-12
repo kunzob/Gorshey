@@ -1,0 +1,6 @@
+/* Loaded only inside <noscript>: without JS nothing marks the document ready, so show the player at once.
+   A same-origin file, not an inline <style>, because the CSP allows style-src 'self' only. */
+.player {
+  visibility: visible !important;
+  animation: none !important;
+}

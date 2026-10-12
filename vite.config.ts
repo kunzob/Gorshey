@@ -16,7 +16,8 @@ export default defineConfig({
       injectManifest: {
         // Shell only. No *.json pattern: public/manifest.json is the TRACK manifest (network-first at runtime).
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}', 'fonts/OFL.txt'],
-        globIgnores: ['manifest.json', 'artwork/**', '**/*.md', 'sw.js'],
+        // noscript.css is for JS-less visits, which never run the service worker.
+        globIgnores: ['manifest.json', 'artwork/**', '**/*.md', 'sw.js', 'noscript.css'],
       },
     }),
   ],

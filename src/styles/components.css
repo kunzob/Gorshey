@@ -80,6 +80,21 @@
   text-align: center;
 }
 
+/* Until locale.ts has written <html lang> (and data-lang-ready), the player is laid out but not shown, so a bo visitor
+   never sees the en line heights first and nothing shifts when the language is applied. visibility, not display:
+   the layout is kept. If JS never runs at all, a zero-length visibility switch reveals it after 6 s (not motion, so
+   it is exempt from reduced motion: this rule's !important outranks the `*` rule there). Without JS, noscript.css. */
+html:not([data-lang-ready]) .player {
+  visibility: hidden;
+  animation: lang-ready-fallback 0s 6s forwards !important;
+}
+
+@keyframes lang-ready-fallback {
+  to {
+    visibility: visible;
+  }
+}
+
 /* Nothing in the column may be wider than the column: long text wraps instead of pushing the header. */
 .player > * {
   max-width: 100%;
