@@ -152,10 +152,16 @@ export class Presence {
     this.serverTracked = false;
     this.setState('connecting');
     this.timeoutTimer = setTimeout(() => this.onTimeout(tr), this.subscribeTimeoutMs);
-    tr.subscribe(
-      (s) => this.onStatus(tr, s),
-      (keys) => this.onSync(tr, keys),
-    );
+    try {
+      tr.subscribe(
+        (s) => this.onStatus(tr, s),
+        (keys) => this.onSync(tr, keys),
+      );
+    } catch {
+      // No WebSocket, or the CSP blocked wss: the same backoff as any other socket failure. connect() also runs from
+      // the backoff timer and the online event, where nothing above would catch it.
+      this.failTransport();
+    }
   }
 
   private onStatus(tr: PresenceTransport, s: Status): void {

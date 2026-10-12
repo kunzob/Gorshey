@@ -317,3 +317,74 @@ describe('failure isolation and config', () => {
     expect(seen).toEqual(['connecting']);
   });
 });
+
+describe('socket failure is fed to backoff on every path (M10 F2)', () => {
+  // realtime-js throws from subscribe() when WebSocket is missing or the CSP blocks wss.
+  class ThrowingTransport extends FakeTransport {
+    override subscribe(): void {
+      throw new Error('WebSocket not available');
+    }
+  }
+  const throwing = (): Partial<PresenceOptions> => ({
+    createTransport: () => {
+      const tr = new ThrowingTransport();
+      transports.push(tr);
+      return tr;
+    },
+  });
+
+  it('the first connect: subscribe throws, the socket is closed and presence backs off', () => {
+    const p = make(throwing());
+    expect(() => p.setListening(true)).not.toThrow();
+    expect(p.state).toBe('backoff');
+    expect(transports[0]!.closed).toBe(true);
+  });
+
+  it('a retry from the backoff timer never throws out of the timer, and keeps backing off', () => {
+    const p = make(throwing());
+    p.setListening(true);
+    expect(() => advance(1000)).not.toThrow(); // first retry
+    expect(transports).toHaveLength(2);
+    expect(transports[1]!.closed).toBe(true);
+    expect(p.state).toBe('backoff');
+    expect(() => advance(2000)).not.toThrow(); // second retry, doubled delay
+    expect(transports).toHaveLength(3);
+    expect(p.count).toBeNull();
+  });
+
+  it('a failed subscribe leaves no subscribe timeout behind (no double retry)', () => {
+    const p = make(throwing());
+    p.setListening(true);
+    advance(1000);
+    advance(2000);
+    advance(4000);
+    expect(transports).toHaveLength(4); // 1 + three backoff retries, nothing extra from a stale 10 s timeout
+    expect(p.state).toBe('backoff');
+  });
+
+  it('the online event: subscribe throws, presence backs off instead of throwing to the window', () => {
+    const p = make(throwing());
+    p.setListening(true);
+    p.onOffline();
+    expect(p.state).toBe('offline');
+    expect(() => p.onOnline()).not.toThrow();
+    expect(p.state).toBe('backoff');
+  });
+
+  it('once the socket works again, the next retry subscribes normally', () => {
+    let fail = true;
+    const p = make({
+      createTransport: () => {
+        const tr = fail ? new ThrowingTransport() : new FakeTransport();
+        transports.push(tr);
+        return tr;
+      },
+    });
+    p.setListening(true);
+    fail = false;
+    advance(1000);
+    last().status('SUBSCRIBED');
+    expect(p.state).toBe('listening');
+    expect(last().tracks).toEqual([{ listening: true }]);
+  });
+});
