@@ -28,6 +28,19 @@ export default tseslint.config(
     },
   },
   {
+    // Code-execution sinks (M10): never allowed anywhere, including tools and tests.
+    files: ['**/*.{ts,js,mjs,cjs}'],
+    // no-implied-eval only flags calls it can resolve to these globals; flat config declares none by default.
+    languageOptions: {
+      globals: { setTimeout: 'readonly', setInterval: 'readonly', execScript: 'readonly', window: 'readonly' },
+    },
+    rules: {
+      'no-eval': 'error',
+      'no-implied-eval': 'error',
+      'no-new-func': 'error',
+    },
+  },
+  {
     files: ['src/ui/**/*.ts'],
     rules: {
       'no-restricted-globals': 'off',
