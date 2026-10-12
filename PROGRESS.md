@@ -336,17 +336,35 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - LCP/CLS proxy (headless Chrome, NOT Lighthouse): 375x667 mobile, 4x CPU, 150 ms RTT, 1.6 Mbit/s, cache off, fresh
   profile, 3 runs per locale. LCP element: the artwork. LCP median en 1,768 ms, bo 1,732 ms; FCP about 0.8 s.
   CLS 0.121 (en) and 0.126 (bo), one shift at about 1.56 s.
-- OPEN (pre-existing, not caused by M9): that shift is the boot fill. When the track manifest arrives after first paint,
-  the "—" placeholders are replaced, `.nextup` grows from 18 to 26 px (Tibetan line-height), and the vertically centred
-  column moves `.top`, `.halo` and `.strip`. The HEAD build before M9 measured the same CLS (0.121 / 0.126) with the
-  same sources. Lighthouse in M8 showed CLS 0, probably because its simulated throttling fills the text before first
-  paint. Proposed fix (needs approval, it changes layout): reserve the filled heights in the skeleton (for example
-  `.nextup` min-height 1.9em at its font size, and the other rows that change), then re-measure.
+- RESOLVED in M9 (caa5509, approved by Kunshe): boot-fill CLS. Pre-existing (the HEAD build before M9 measured the same
+  0.121 / 0.126 from the same sources); Lighthouse in M8 showed CLS 0, probably because its simulated throttling fills
+  the text before first paint.
+  - Measured (track manifest paused via CDP Fetch, then released; 375x667 and 1280x800): rows that grew from the
+    placeholder to the filled state: en `#station` 27 -> 38 px, `#nextup` 18 -> 25.83 (375) / 20 -> 28.88 (1280),
+    `#footer` 4 -> 17; bo only `#footer` 4 -> 24.89. Everything else kept its height and only moved with the centred column.
+  - Fix: `.station` and `.nextup` `min-height: 1.9em` (both always contain a Tibetan run; em follows the short-phone
+    font size), `.footer` `min-height: calc(4px + 1lh)` (padding plus one line of its own line height: mono in en,
+    1.9 in bo). Static tests in `tests/m9-static.test.ts`.
+  - After: placeholder and filled heights and positions identical for every row, both locales, both sizes. Filled
+    positions equal the pre-fix filled positions, and 375x667 paused (never played) screenshots before and after the fix
+    are pixel-identical in en and bo (0 differing rows): the loaded layout did not change.
+  - CLS proxy (same setup, 3 runs per locale): before 0.121 (en) / 0.126 (bo); after 0.0139 (en) / 0.0149 (bo), identical
+    in every run. LCP median after: en 1,724 ms, bo 1,712 ms (artwork); FCP about 0.8 s.
+  - Remaining shift (about 1.6 s, horizontal only, no y or height change): `#station`, `#nextup`, `#locale`, `.controls`
+    and `#clock` widen from "—" to their text, and centred or right-aligned boxes move their left edge. Not reserved:
+    it would need fixed widths, a design change.
+  - Residual risk: index.html ships `lang="en"`, so in bo a paint before the module runs would lay out with Latin line
+    heights and shift when `applyDocumentLang` sets bo. Not observed in the proxy (no shift before about 1.6 s).
+- Play-time note (not boot): `#position` goes from empty (0 px) to "m:ss / m:ss" when ticks start after play. If that is
+  more than 500 ms after the click it counts as CLS. Not measured (the proxy never presses play). Check in M10.
 - Incident: the screenshot script blocked `*supabase.co/realtime*` with CDP `Network.setBlockedURLs`, which does not
   apply to WebSockets. The 4 playing captures joined the live presence channel as one listener each (badge "1 on the
-  kora") and left when the tab closed. No data written (presence has no tables). The perf run stubbed `WebSocket` in
-  the page and never pressed play. Future scripts must stub `WebSocket`, not rely on URL blocking.
+  kora") and left when the tab closed. No data written (presence has no tables).
+  **Rule (Kunshe, standing):** every browser script must stub `WebSocket` in the page (via
+  `Page.addScriptToEvaluateOnNewDocument`) and must never press play against the live channel. URL blocking is not enough.
 - Testing: red run 19 failing tests plus 1 suite failing at import (`tools/check-budget.mjs` missing); after: 502
   passing. New: `tests/m9-static.test.ts`, `tests/check-budget.test.ts`; extended `tests/render.test.ts`.
 - Screenshots (not committed): `scratch/m9/{375x667,1280x800}-{en,bo}-{playing,paused}.png`. Script:
   `scratch/m9/shoot.mjs`; reports `shots-report.json`, `perf-proxy.json`; red run `red-run.txt`.
+- CLS fix artefacts: red run `red-run-cls.txt` (3 failing); row measurements `rows-before.json`, `rows-after.json`;
+  proxy `perf-proxy-after.json`; `375x667-{en,bo}-paused-{before,after}-cls.png`. Tests after: 506 passing.
