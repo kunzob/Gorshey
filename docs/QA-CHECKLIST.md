@@ -9,7 +9,7 @@ Measurements and screenshots live in `scratch/m10/` (git-ignored).
 | :--- | :--- | :--- |
 | Unit and static tests | `npm run test:coverage` | 615 passing, 100% branches on `src/core` (after the M10 fixes) |
 | Lint, types, sinks | `npm run lint` (incl. `no-eval`, `no-implied-eval`, `no-new-func`) | clean |
-| Build, precache, secrets, budget | `npm run build` | 12 precache entries, 0 secret-like hits, 49.3 KB of 60 KB |
+| Build, precache, secrets, budget | `npm run build` | 12 precache entries, 0 secret-like hits, 50.0 KB of 60 KB (after the M10 fixes) |
 | Browser e2e | `npm run e2e` (headless Chrome, WebSocket stubbed) | 18/18: load, lang, no clipped Tibetan boxes, no horizontal scroll, play, presence placeholder, pause, toggle |
 | CSP | `tools/preview-headers.mjs` + headless Chrome | 0 violations, both locales, SW install and controlled reload |
 | CLS on boot | headless proxy, 3 runs per locale | after F5: en 0.0043, bo 0.0153, horizontal only (before: bo 0.0389 incl. a 0.0159 vertical lang flip) |
