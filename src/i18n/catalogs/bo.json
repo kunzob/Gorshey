@@ -1,7 +1,7 @@
 {
   "station.name": "Gorshey · སྒོར་གཞས།",
   "player.play": "འགོ་འཛུགས།",
-  "player.pause": "འགོག་པ།",
+  "player.pause": "མཚམས་འཇོག",
   "player.live": "ཐད་ཀར་ཡོད།",
   "badge.listeners": "སྒོར་ལ་ {n} ཡོད།",
   "player.nowPlaying": "ད་ལྟ་བསྒྲག་བཞིན་ཡོད།",
