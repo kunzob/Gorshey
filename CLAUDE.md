@@ -81,6 +81,15 @@ Modules communicate through small typed event emitters. If you find yourself imp
   `.claude/settings.json` denies the common forms of this, but that list is defense-in-depth, not a sandbox —
   the actual reason this is safe is that no legitimate task in this project ever requires reading these files.
   If a task ever seems to require a secret value, stop and ask Kunshe rather than reading the file.
+- **HARD RULE (added after M10 finding F1):** never run a recursive `grep`, `rg`, `find`, `cat`, `ls -R`, glob or
+  any other content scan over `tools/`, the repo root, or any directory that can hold secret files. Searches and
+  file listings use `git grep` / `git ls-files` only (tracked files; the secret files are git-ignored and can never
+  match). Never print or quote any part of a key or token, not even a masked prefix; report only file, line and
+  pattern name.
+- Never pipe a gate command (`npm run lint`, `npm run test`, `npm run test:coverage`, `npm run build`) into anything
+  that hides its exit code (`| tail`, `| grep`, `| tee` without `pipefail`). Run it plainly and show the exit status.
+- Browser scripts stub `WebSocket` in every page (`tools/e2e.mjs` does this by default) and never join the live
+  presence channel. A real presence connection needs Kunshe's explicit approval for that run.
 - The only keys allowed in frontend code are `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (public by design). A Supabase **service-role** key, a Supabase Storage upload key beyond the anon key's scope, or any future R2 secret must never appear in `src/`, `public/`, or git history.
 - Do not connect to the Supabase MCP server or run commands against the live Supabase project.
 - Do not run upload, deploy, or DNS commands. Write them; Kunshe runs them.
