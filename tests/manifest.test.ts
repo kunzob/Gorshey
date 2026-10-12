@@ -186,3 +186,52 @@ describe('parseManifest: track fields', () => {
     expect(() => parseManifest(raw)).toThrow(/tracks\[0\]\.src/);
   });
 });
+
+describe('parseManifest: media URLs are https or same-origin paths only (M10 F3)', () => {
+  const ok = [
+    'https://nfkubphegarcrznwjdlb.supabase.co/storage/v1/object/public/gorshey-media/audio/a.mp3',
+    'https://cdn.example.com/a%20b.mp3?v=1',
+    '/audio/a.mp3',
+    '/artwork/artwork-512.jpg',
+  ];
+  const bad: Array<[string, string]> = [
+    ['javascript:', 'javascript:alert(1)'],
+    ['data:', 'data:audio/mpeg;base64,AAAA'],
+    ['http:', 'http://cdn.example.com/a.mp3'],
+    ['blob:', 'blob:https://example.com/0f1e2d3c-1111-2222-3333-444455556666'],
+    ['protocol-relative', '//evil.example/a.mp3'],
+    ['backslash host', '/\\evil.example/a.mp3'],
+    ['bare relative', 'audio/a.mp3'],
+    ['malformed https', 'https://'],
+    ['not a URL', 'not a url'],
+    ['leading space', ' https://cdn.example.com/a.mp3'],
+    ['control character', 'https://cdn.example.com/a\n.mp3'],
+    ['credentials', 'https://user:pass@cdn.example.com/a.mp3'],
+    ['ftp:', 'ftp://cdn.example.com/a.mp3'],
+  ];
+
+  for (const field of ['src', 'artwork'] as const) {
+    it.each(ok)(`accepts ${field} %s`, (url) => {
+      const raw = clone();
+      track(raw, 0)[field] = url;
+      expect(parseManifest(raw).tracks[0]![field]).toBe(url);
+    });
+
+    it.each(bad)(`rejects a ${field} that is %s`, (_name, url) => {
+      const raw = clone();
+      track(raw, 1)[field] = url;
+      expect(() => parseManifest(raw)).toThrow(new RegExp(String.raw`tracks\[1\]\.${field}: .*https: URL or a same-origin path`));
+    });
+  }
+
+  it('the error never echoes the rejected URL (it may carry a token)', () => {
+    const raw = clone();
+    track(raw, 0).src = 'http://cdn.example.com/a.mp3?token=SECRET123';
+    expect(() => parseManifest(raw)).toThrow(/tracks\[0\]\.src/);
+    try {
+      parseManifest(raw);
+    } catch (e) {
+      expect(String(e)).not.toContain('SECRET123');
+    }
+  });
+});

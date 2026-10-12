@@ -19,6 +19,34 @@ function requireString(obj: Json, key: string, path: string): string {
   return v;
 }
 
+// Whitespace, control characters and backslashes: URL parsers repair these silently, so they are refused outright.
+const UNSAFE_URL_CHARS = /[\s\u0000-\u001f\u007f\\]/;
+
+/**
+ * Media URLs (src, artwork) must be an absolute https: URL with a host and no credentials, or a same-origin path
+ * ("/x", never "//x"). Everything else (javascript:, data:, blob:, http:, bare relative) is refused. The error names
+ * the field only: the rejected value may carry a token.
+ */
+function requireMediaUrl(obj: Json, key: string, path: string): string {
+  const v = requireString(obj, key, path);
+  const problem = 'must be an https: URL or a same-origin path';
+  if (UNSAFE_URL_CHARS.test(v)) fail(`${path}.${key}`, problem);
+  if (v.startsWith('/')) {
+    if (v.startsWith('//')) fail(`${path}.${key}`, problem);
+    return v;
+  }
+  let url: URL;
+  try {
+    url = new URL(v);
+  } catch {
+    fail(`${path}.${key}`, problem);
+  }
+  if (url.protocol !== 'https:' || url.hostname === '' || url.username !== '' || url.password !== '') {
+    fail(`${path}.${key}`, problem);
+  }
+  return v;
+}
+
 function requireLocalized(obj: Json, key: string, path: string): LocalizedText {
   const v = obj[key];
   const at = `${path}.${key}`;
@@ -37,9 +65,9 @@ function parseTrack(raw: unknown, path: string): ManifestTrack {
     title: requireLocalized(raw, 'title', path),
     artist: requireLocalized(raw, 'artist', path),
     duration,
-    src: requireString(raw, 'src', path),
+    src: requireMediaUrl(raw, 'src', path),
   };
-  if (raw.artwork !== undefined) track.artwork = requireString(raw, 'artwork', path);
+  if (raw.artwork !== undefined) track.artwork = requireMediaUrl(raw, 'artwork', path);
   return track;
 }
 
