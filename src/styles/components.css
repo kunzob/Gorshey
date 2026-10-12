@@ -266,15 +266,26 @@
   font-size: 0.9rem;
   opacity: 0.8;
   font-variant-numeric: tabular-nums;
+  min-height: 1lh; /* the "m:ss / m:ss" line is reserved while paused, so play never grows the strip */
 }
 
-/* Play/pause: a pill, one line, no fixed height (min-height gives the 48 px target). */
+/* Play/pause: a pill, one line, no fixed height (min-height gives the 48 px target). The button and the hidden
+   sizers (every label in every locale, render.ts) share one grid cell, so the pill is as wide as the longest label. */
 .controls {
-  display: flex;
+  display: grid;
   align-items: center;
   justify-content: center;
   gap: 8px;
   flex: none;
+}
+
+.controls > * {
+  grid-area: 1 / 1;
+}
+
+.play-sizer {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .play {

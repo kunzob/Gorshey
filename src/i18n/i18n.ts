@@ -76,7 +76,17 @@ export function createI18n<C extends string>(
   const listeners = new Set<(l: C) => void>();
 
   function t(key: string, vars?: Record<string, string | number>): string {
-    const raw = catalogs[current]?.[key] ?? catalogs[FALLBACK]?.[key];
+    return lookup(current, key, vars);
+  }
+
+  /** One locale's string whatever the current locale (used to size controls for every label). */
+  function tFor(code: C, key: string, vars?: Record<string, string | number>): string {
+    if (!codes.has(code)) throw new Error(`Unknown locale: ${code}`);
+    return lookup(code, key, vars);
+  }
+
+  function lookup(code: C, key: string, vars?: Record<string, string | number>): string {
+    const raw = catalogs[code]?.[key] ?? catalogs[FALLBACK]?.[key];
     if (raw === undefined) {
       console.warn(`[i18n] missing key: ${key}`);
       return key;
@@ -85,7 +95,7 @@ export function createI18n<C extends string>(
     if (typeof raw === 'string') {
       template = raw;
     } else {
-      const category = new Intl.PluralRules(current).select(Number(vars?.n ?? 0));
+      const category = new Intl.PluralRules(code).select(Number(vars?.n ?? 0));
       template = raw[category] ?? raw.other ?? key;
     }
     return template.replace(/\{(\w+)\}/g, (whole, name: string) => {
@@ -109,6 +119,7 @@ export function createI18n<C extends string>(
 
   return {
     t,
+    tFor,
     setLocale,
     getLocale: (): C => current,
     onLocaleChange(cb: (l: C) => void): Unsubscribe {
@@ -148,6 +159,7 @@ export function brandParts(): LangRun[] {
 const instance = createI18n(LOCALES, { en: enCatalog as Catalog, bo: boCatalog as Catalog }, detectLocale());
 
 export const t = instance.t;
+export const tFor = instance.tFor;
 export const setLocale = instance.setLocale;
 export const getLocale = instance.getLocale;
 export const onLocaleChange = instance.onLocaleChange;

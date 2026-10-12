@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AudioEngine, EngineState, TickEvent } from '../src/audio/AudioEngine';
 import type { Manifest } from '../src/core/types';
-import { getLocale, setLocale, setLocaleApplier, t } from '../src/i18n/i18n';
+import { getLocale, setLocale, setLocaleApplier, t, tFor } from '../src/i18n/i18n';
 import { applyDocumentLang } from '../src/ui/locale';
 import { mountPlayer, showBootFailure } from '../src/ui/render';
 import { reloadWhenOnline } from '../src/ui/freshManifest';
@@ -548,6 +548,46 @@ describe('update prompt button', () => {
     ctx.player.showUpdate();
     expect($('update').textContent).toBe(t('update.available'));
     expect($('update').textContent).toMatch(/[ༀ-࿿]/);
+  });
+});
+
+describe('play pill and position row never resize on play, pause or a locale swap (M10 F6)', () => {
+  const sizers = (): HTMLElement[] => [...document.querySelectorAll<HTMLElement>('.controls .play-sizer')];
+
+  it('the controls hold one hidden sizer per play/pause label in every locale, each tagged with its language', () => {
+    const got = sizers().map((s) => `${s.lang}:${s.textContent}`).sort();
+    const want = (['en', 'bo'] as const)
+      .flatMap((l) => ['player.play', 'player.pause'].map((k) => `${l}:${tFor(l, k)}`))
+      .sort();
+    expect(got).toEqual(want);
+  });
+
+  it('the sizers are hidden from assistive technology and are not buttons or tab stops', () => {
+    for (const s of sizers()) {
+      expect(s.getAttribute('aria-hidden')).toBe('true');
+      expect(s.tagName).toBe('SPAN');
+      expect(s.hasAttribute('tabindex')).toBe(false);
+    }
+  });
+
+  it('the play button still holds only its own label (name and textContent unchanged)', () => {
+    expect($('play').textContent).toBe(t('player.play'));
+    ctx.engine.emit('state', 'playing');
+    expect($('play').textContent).toBe(t('player.pause'));
+  });
+
+  it('a locale switch keeps exactly the same four sizers', () => {
+    const before = sizers().map((s) => s.textContent);
+    setLocale('bo');
+    expect(sizers().map((s) => s.textContent)).toEqual(before);
+    setLocale('en');
+  });
+
+  it('unmount removes the sizers, so a remount never doubles them', () => {
+    ctx.player.unmount();
+    expect(sizers()).toHaveLength(0);
+    ctx = start();
+    expect(sizers()).toHaveLength(4);
   });
 });
 

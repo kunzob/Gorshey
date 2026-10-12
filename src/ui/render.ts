@@ -1,8 +1,8 @@
 // The only module that writes the player DOM. Text goes in with textContent; Latin and Tibetan runs are separate spans.
 import type { AudioEngine, EngineState } from '../audio/AudioEngine';
 import type { Manifest } from '../core/types';
-import { brandParts, getLocale, onLocaleChange, setLocale, t, titleParts, type LangRun } from '../i18n/i18n';
-import type { Locale } from '../i18n/locales';
+import { brandParts, getLocale, onLocaleChange, setLocale, t, tFor, titleParts, type LangRun } from '../i18n/i18n';
+import { LOCALES, type Locale } from '../i18n/locales';
 import { refs } from './dom';
 import { setRing } from './KoraRing';
 import { localeToggleTarget } from './LocaleToggle';
@@ -37,6 +37,26 @@ function writeNextUp(el: HTMLElement, label: string, runs: LangRun[], locale: Lo
 
 const ACTIVE: EngineState[] = ['loading', 'playing', 'buffering'];
 
+/**
+ * Invisible copies of every play/pause label in every locale, stacked in the play button's grid cell, so the pill is
+ * always as wide as the longest label and play, pause or a locale swap never resizes it. aria-hidden spans, not
+ * buttons: the real button keeps its own text and accessible name. Returns a remover for unmount.
+ */
+function mountPlaySizers(controls: HTMLElement): () => void {
+  const sizers = LOCALES.flatMap(({ code }) =>
+    (['player.play', 'player.pause'] as const).map((key) => {
+      const s = document.createElement('span');
+      s.className = 'play play-sizer';
+      s.setAttribute('aria-hidden', 'true');
+      s.lang = code;
+      s.textContent = tFor(code, key);
+      return s;
+    }),
+  );
+  controls.append(...sizers);
+  return () => sizers.forEach((s) => s.remove());
+}
+
 export interface Player {
   unmount(): void;
   /** Shows the "update available" button (M8). Its click is wired in updatePrompt.ts. */
@@ -62,6 +82,7 @@ export function mountPlayer(opts: {
   let state: EngineState = engine.state;
   let offline = opts.offline();
   let updateAnnounced = false;
+  const removeSizers = mountPlaySizers(r.play.parentElement as HTMLElement);
 
   const duration = (): number => durations[trackIdx] ?? 0;
   const artistFor = (locale: Locale): string => {
@@ -194,6 +215,7 @@ export function mountPlayer(opts: {
       offLocale();
       r.artwork.removeEventListener('error', onArtError);
       r.artwork.removeEventListener('load', onArtLoad);
+      removeSizers();
       r.play.removeEventListener('click', onPlay);
       r.locale.removeEventListener('click', onLocale);
       window.removeEventListener('online', onNetwork);

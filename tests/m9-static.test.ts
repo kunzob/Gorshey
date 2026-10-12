@@ -173,6 +173,31 @@ describe('boot-fill rows reserve their filled height (M9 CLS fix)', () => {
   });
 });
 
+describe('play/pause never resizes the strip (M10 F6)', () => {
+  const own = (sel: string): Rule | undefined =>
+    RULES.find((r) => r.selectors.length === 1 && r.selectors[0] === sel && r.at.length === 0);
+
+  it('the position row reserves one line of its own line height (mono digits in en, 1.9 in bo)', () => {
+    expect(decl(own('.position')!.body, 'min-height')).toBe('1lh');
+  });
+
+  it('the controls stack the button and its sizers in one grid cell, still centred with the 8 px gap', () => {
+    const c = own('.controls')!;
+    expect(decl(c.body, 'display')).toBe('grid');
+    expect(decl(c.body, 'justify-content')).toBe('center');
+    expect(decl(c.body, 'gap')).toBe('8px');
+    const cell = RULES.find((r) => r.selectors.includes('.controls > *') && r.at.length === 0)!;
+    expect(decl(cell.body, 'grid-area')).toBe('1 / 1');
+  });
+
+  it('sizers keep their box (visibility, not display) and never take a click', () => {
+    const s = own('.play-sizer')!;
+    expect(decl(s.body, 'visibility')).toBe('hidden');
+    expect(decl(s.body, 'pointer-events')).toBe('none');
+    expect(decl(s.body, 'display')).toBeNull();
+  });
+});
+
 describe('visually hidden utility for announcements (M10 F8)', () => {
   it('.sr-only hides content visually but keeps it in the accessibility tree (no display:none or visibility)', () => {
     const r = RULES.find((x) => x.selectors.length === 1 && x.selectors[0] === '.sr-only' && x.at.length === 0)!;

@@ -143,6 +143,18 @@ describe('t(): lookup, interpolation, plurals', () => {
     fx.setLocale('bo'); // bo has only the "other" category, so 1 also takes "other"
     expect(fx.t('item', { n: 1 })).toBe('1 རིགས།');
   });
+
+  it('tFor(locale, key) reads one locale whatever the current one, with the same en fallback (M10 F6)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const fx = createI18n(LOCALES, { en: { a: 'A-en', b: 'B-en' }, bo: { a: 'A-bo' } } as Record<string, Catalog>);
+    fx.setLocale('en');
+    expect(fx.tFor('bo', 'a')).toBe('A-bo');
+    expect(fx.tFor('en', 'a')).toBe('A-en');
+    expect(fx.tFor('bo', 'b')).toBe('B-en');
+    expect(fx.t('a')).toBe('A-en'); // the current locale is unchanged
+    expect(() => fx.tFor('xx' as never, 'a')).toThrow(/Unknown locale/);
+    warn.mockRestore();
+  });
 });
 
 // ---- detection and persistence -------------------------------------------------------------------
