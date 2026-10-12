@@ -72,6 +72,7 @@ describe('swRoute: bypass (never respondWith)', () => {
   it('a same-origin GET that is not precached and not a navigation', () => {
     expect(classify(req('/unknown.txt'))).toBe('bypass');
     expect(classify(req('/fonts/SOURCE.md'))).toBe('bypass');
+    expect(classify(req('/robots.txt'))).toBe('bypass');
   });
 });
 

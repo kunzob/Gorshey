@@ -189,3 +189,17 @@ describe('precache check (tools/check-precache.mjs)', () => {
     expect(findMissing(REQUIRED_ENTRIES)).toEqual([]);
   });
 });
+
+describe('robots.txt (M10: Lighthouse SEO on vite preview)', () => {
+  it('public/robots.txt allows everything, as plain text with no sitemap', () => {
+    expect(read('public/robots.txt')).toBe('User-agent: *\nAllow: /\n');
+  });
+
+  it('is never precached: the glob does not match it and the precache check forbids it', () => {
+    const cfg = read('vite.config.ts');
+    const globs = cfg.match(/globPatterns:\s*\[([^\]]*)\]/)![1]!;
+    // No generic *.txt glob: OFL.txt is listed by name, so robots.txt can never match.
+    expect(globs).not.toMatch(/robots|\*\.txt|\*\.\{[^}]*\btxt\b/);
+    expect(findForbidden(['index.html', 'robots.txt'])).toEqual(['robots.txt']);
+  });
+});
