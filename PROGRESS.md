@@ -14,7 +14,7 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [x] M6  Presence (Supabase): accepted by Kunshe (evidence: 20053de, dd32f79; live checks confirmed)
 - [x] M7  Media Session: accepted by Kunshe (evidence: 8283f6f, c4562db; live checks confirmed)
 - [x] M8  PWA (manifest + service worker): accepted by Kunshe (evidence: 0029194, c2c2d0b; live checks confirmed)
-- [ ] M9  Theme polish
+- [ ] M9  Theme polish (built; Kunshe visual review and Lighthouse rerun pending)
 - [ ] M10 QA (devices, Tibetan rendering, security review)
 - [ ] M11 Deploy
 
@@ -126,10 +126,8 @@ The agent updates this file at the end of every task. Newest notes at the bottom
   size-adjust, not font-size); `.player` is `min-height: 100dvh` with border-box padding; the ring is sized from height as well as width.
 - Position under the artist: the empty paused state no longer shows text. It was the drafted Tibetan "ཚོད་མེད།",
   which read as an extra line. Now empty, so nothing shows there when paused.
-- DEFERRED to M9 (theme polish): artwork inside the ring. `render.ts` does not set the `<img id="artwork">` source yet.
-  The manifest URL returns `200 image/jpeg`, so it will load once wired. Requirement for M9: a missing or failing image
-  must fall back gracefully. The ring stays, the image is hidden on error (no broken-image icon), and the layout does
-  not shift.
+- Artwork inside the ring: wired in M5b (78c96f9, `paintArtwork` in `render.ts`) and finished in M9 (hidden until
+  `load`, hidden on `error`, same-URL repaint is a no-op, width/height/decoding attributes). See "M9 theme polish".
 - Round 3 (toggle label): the label is now a `<span lang="bo">` inside the button, which keeps the UI language. The Tibetan
   scale is 125% (size-adjust) for all Tibetan text. Headless Chrome screenshot at a true 390 px width (an iframe) shows
   the Tibetan label at the title's scale. The 48 px target is unchanged.
@@ -248,6 +246,9 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [ ] Vercel headers: `Cache-Control: no-cache` for `/sw.js`, `/index.html` and the track manifest `/manifest.json`
   (ARCHITECTURE §9). There is no `vercel.json` yet. Without this, a CDN-cached `sw.js` delays updates and a CDN-cached
   track manifest defeats the network-first strategy.
+- [ ] Replace placeholder track artwork (media/art/song*.jpg), re-upload, run npm run manifest. Today both tracks
+  point to one 512x512, 1,757-byte, almost black JPEG, which shows as a black disc in the ring. Real covers should
+  stay within the 16 KB artwork reserve in `tools/check-budget.mjs` (or raise the reserve deliberately).
 - [ ] Resolve the licence of the lock-screen artwork source (`potoala_palace.png`, user-provided wallpaper; see
   `public/ASSETS.md`). Replace the image if the licence cannot be confirmed.
 
@@ -300,6 +301,52 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - Not covered in this round: phone install and offline behaviour on iOS/Android. These are carried to the M10 device pass.
 
 ## M9 checklist additions
-- [ ] Add a favicon `<link>` in `index.html`. `/favicon.ico` currently returns 404.
-- [ ] Add a `<meta name="description">`. This is the cause of Lighthouse SEO 83.
+- [x] Add a favicon `<link>` in `index.html`. `/favicon.ico` currently returns 404. (M9: `rel="icon"` to icon-192.png.)
+- [x] Add a `<meta name="description">`. This is the cause of Lighthouse SEO 83. (M9: one English sentence.)
 - [ ] Note: LCP was 2.6 s in the M8 Lighthouse run (lab, throttled mobile). No action yet; re-measure after M9.
+  M9 headless proxy (not Lighthouse) below; Kunshe reruns Lighthouse.
+
+## M9 theme polish
+- Task file reconciled: step 1 (grain) and step 2 (Potala mark) were done differently in M5b (`public/grain/grain.png`
+  tile, `public/hero/hero-potala.svg` full-bleed hero); both untouched. Steps 3-6 done here.
+- Artwork (approved): per-track artwork from the manifest, no fallback image. `<img id="artwork">` has
+  `width="512" height="512" decoding="async"`, no preload, no lazy. Hidden whenever `src` changes, shown only on
+  `load`, hidden on `error`; a repaint with the same URL is a no-op. Fixed bug: a locale change used to un-hide a failed
+  image (broken-image icon). The image is absolute inside the fixed-size halo, so it never shifts layout. Service-worker
+  routing unchanged (artwork and the media CDN still bypass it).
+- Presence dot: `data-live` only when the badge shows a real count. Live: gold with a 2.4 s opacity/scale pulse, declared
+  only under `prefers-reduced-motion: no-preference` (static gold otherwise). Placeholder "—": static maroon, no pulse.
+- Kora ring: `.halo[data-active]` while loading/playing/buffering (same set as the play label). Track stroke gold at 0.35
+  alpha when active, whitewash at 0.12 when not; 0.6 s colour transition only when motion is allowed. Fill and
+  `setRing` unchanged; the SVG stays aria-hidden.
+- index.html: `<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">` (existing, precached
+  icon) and one English `<meta name="description">`. Not in the catalogs: it is static, read by search engines and
+  link previews before JS runs, never shown in the UI, and HTML has no standard per-language description in one page.
+- Footer: `class="caps"`; `.caps:lang(en)` uppercases and tracks. `en.footer.line` is now sentence case
+  ("Marpo Ri · 3,700 m · 1645"); bo.json untouched.
+- Fixed (pre-existing since M5b): `.mono` set `letter-spacing: 0.12em` and the mono stack unscoped, and components.css
+  loads after base.css, so it beat `:lang(bo)` at equal specificity. The bo eyebrow got tracking and the mono stack.
+  Now `.mono:lang(en)` carries the stack and tracking; `.clock` keeps the mono stack (digits only, agreed decision).
+  Static test: every non-normal `letter-spacing` and non-none `text-transform` is scoped to `:lang(en)`. Headless
+  Chrome check of computed styles on every element with Tibetan text (375 and 1280, en and bo): 0 violations.
+- Tibetan font preload kept as is (deliberate: the Tibetan brand is on screen on every load). Precache unchanged.
+- Budget: `tools/check-budget.mjs` runs last in `npm run build`. It counts index.html, the referenced JS and CSS, hero,
+  grain, both manifests (text gzip -9, PNG raw) plus a 16 KB reserve for the remote track artwork, which the build cannot
+  measure. Fails over 60 KB (61,440 B). M9 build: 50,465 B incl. reserve; with today's 1,757 B artwork, 35,838 B.
+- LCP/CLS proxy (headless Chrome, NOT Lighthouse): 375x667 mobile, 4x CPU, 150 ms RTT, 1.6 Mbit/s, cache off, fresh
+  profile, 3 runs per locale. LCP element: the artwork. LCP median en 1,768 ms, bo 1,732 ms; FCP about 0.8 s.
+  CLS 0.121 (en) and 0.126 (bo), one shift at about 1.56 s.
+- OPEN (pre-existing, not caused by M9): that shift is the boot fill. When the track manifest arrives after first paint,
+  the "—" placeholders are replaced, `.nextup` grows from 18 to 26 px (Tibetan line-height), and the vertically centred
+  column moves `.top`, `.halo` and `.strip`. The HEAD build before M9 measured the same CLS (0.121 / 0.126) with the
+  same sources. Lighthouse in M8 showed CLS 0, probably because its simulated throttling fills the text before first
+  paint. Proposed fix (needs approval, it changes layout): reserve the filled heights in the skeleton (for example
+  `.nextup` min-height 1.9em at its font size, and the other rows that change), then re-measure.
+- Incident: the screenshot script blocked `*supabase.co/realtime*` with CDP `Network.setBlockedURLs`, which does not
+  apply to WebSockets. The 4 playing captures joined the live presence channel as one listener each (badge "1 on the
+  kora") and left when the tab closed. No data written (presence has no tables). The perf run stubbed `WebSocket` in
+  the page and never pressed play. Future scripts must stub `WebSocket`, not rely on URL blocking.
+- Testing: red run 19 failing tests plus 1 suite failing at import (`tools/check-budget.mjs` missing); after: 502
+  passing. New: `tests/m9-static.test.ts`, `tests/check-budget.test.ts`; extended `tests/render.test.ts`.
+- Screenshots (not committed): `scratch/m9/{375x667,1280x800}-{en,bo}-{playing,paused}.png`. Script:
+  `scratch/m9/shoot.mjs`; reports `shots-report.json`, `perf-proxy.json`; red run `red-run.txt`.
