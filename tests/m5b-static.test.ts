@@ -32,7 +32,7 @@ describe('footer: catalog strings only, no placeholder or mantra in production m
   });
 
   it('the footer line exists in both catalogs', () => {
-    expect(EN['footer.line']).toBe('MARPO RI · 3,700 M · 1645');
+    expect(EN['footer.line']).toBe('Marpo Ri · 3,700 m · 1645'); // M9: sentence case, uppercased by .caps:lang(en)
     expect(BO['footer.line']).toMatch(/[ༀ-࿿]/);
   });
 

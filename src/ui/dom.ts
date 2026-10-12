@@ -8,6 +8,8 @@ export function req<T extends Element = HTMLElement>(id: string): T {
 export function refs() {
   return {
     badge: req('badge'),
+    dot: req('dot'),
+    halo: req('halo'),
     clock: req<HTMLTimeElement>('clock'),
     locale: req<HTMLButtonElement>('locale'),
     station: req('station'),

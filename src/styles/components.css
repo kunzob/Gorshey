@@ -39,11 +39,27 @@
 }
 
 .mono {
-  font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: 0.12em;
   margin: 0;
   opacity: 0.75;
+}
+
+/* Latin only: the mono stack and tracking never reach Tibetan. A .mono element in bo mode inherits lang="bo" from
+   <html>, and this file loads after base.css, so an unscoped .mono would beat :lang(bo) at equal specificity. */
+.mono:lang(en) {
+  font-family: var(--mono);
+  letter-spacing: 0.12em;
+}
+
+/* The clock shows Western digits in every locale (agreed decision), so it keeps the mono stack in bo mode too. */
+.clock {
+  font-family: var(--mono);
+}
+
+/* Uppercase for Latin only; the catalog keeps sentence case so screen readers read words, not letters. */
+.caps:lang(en) {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
 }
 
 /* ---- player column: one viewport, safe area inside the box ---- */
@@ -107,11 +123,36 @@
   gap: var(--space-1);
 }
 
+/* Presence dot: static maroon while the badge shows the placeholder; gold only with a real count. */
 .dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--color-maroon);
+}
+
+.dot[data-live] {
+  background: var(--color-gold);
+  box-shadow: 0 0 6px rgba(201, 162, 74, 0.55);
+}
+
+@keyframes dot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.8);
+  }
+}
+
+/* The pulse exists only when motion is allowed; under reduced motion the live dot is gold and still. */
+@media (prefers-reduced-motion: no-preference) {
+  .dot[data-live] {
+    animation: dot-pulse 2.4s ease-in-out infinite;
+  }
 }
 
 .station {
@@ -136,10 +177,21 @@
   transform: rotate(-90deg);
 }
 
+/* Track: dim while paused or idle, a subtle gold while active (loading, playing, buffering). */
 .ring-track {
   fill: none;
-  stroke: rgba(242, 237, 228, 0.22);
+  stroke: rgba(242, 237, 228, 0.12);
   stroke-width: 3;
+}
+
+.halo[data-active] .ring-track {
+  stroke: rgba(201, 162, 74, 0.35);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ring-track {
+    transition: stroke 0.6s ease;
+  }
 }
 
 .ring-fill {

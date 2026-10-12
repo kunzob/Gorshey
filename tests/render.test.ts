@@ -303,7 +303,7 @@ describe('language toggle label span', () => {
 describe('footer line (catalog, own lang span)', () => {
   it('the footer text is the catalog string, in a span tagged with the UI language', () => {
     const span = $('footer').querySelector('span')!;
-    expect(span.textContent).toBe('MARPO RI · 3,700 M · 1645');
+    expect(span.textContent).toBe(t('footer.line'));
     expect(span.lang).toBe('en');
   });
 
@@ -317,31 +317,118 @@ describe('footer line (catalog, own lang span)', () => {
 });
 
 describe('artwork in the ring', () => {
-  it('the image source is the current track artwork from the manifest', () => {
-    const manifest = { ...REAL, tracks: [{ ...REAL.tracks[0]!, artwork: 'https://cdn.test/art/a.jpg' }, REAL.tracks[1]!] };
+  const ART_A = 'https://cdn.test/art/a.jpg';
+  const ART_B = 'https://cdn.test/art/b.jpg';
+  function remountWithArt(a: string | undefined, b: string | undefined): void {
+    const manifest = { ...REAL, tracks: [{ ...REAL.tracks[0]!, artwork: a }, { ...REAL.tracks[1]!, artwork: b }] };
     ctx.player.unmount();
     mountSkeleton();
     const engine = new FakeEngine();
     const player = mountPlayer({ engine: engine as unknown as AudioEngine, manifest, now: () => EPOCH_MS + 50_000, offline: () => false });
     ctx = { engine, player };
-    expect($('artwork').getAttribute('src')).toBe('https://cdn.test/art/a.jpg');
+  }
+
+  it('the image has intrinsic size and async decoding, and is neither lazy nor preloaded', () => {
+    const img = $<HTMLImageElement>('artwork');
+    expect(img.getAttribute('width')).toBe('512');
+    expect(img.getAttribute('height')).toBe('512');
+    expect(img.getAttribute('decoding')).toBe('async');
+    expect(img.hasAttribute('loading')).toBe(false);
+    expect(readFileSync('index.html', 'utf8')).not.toMatch(/rel="preload"[^>]*(artwork|\/art\/)/);
+  });
+
+  it('the source is the current track artwork, hidden until it loads, then shown', () => {
+    remountWithArt(ART_A, ART_B);
+    expect($('artwork').getAttribute('src')).toBe(ART_A);
+    expect($('artwork').hidden).toBe(true);
+    $('artwork').dispatchEvent(new Event('load'));
     expect($('artwork').hidden).toBe(false);
   });
 
-  it('a track without artwork hides the image (no broken-image icon)', () => {
+  it('a track without artwork hides the image and drops the source (no broken-image icon)', () => {
     expect($('artwork').hidden).toBe(true);
+    expect($('artwork').hasAttribute('src')).toBe(false);
   });
 
   it('a failing image is hidden, so the ring stays and nothing shifts visibly', () => {
-    const manifest = { ...REAL, tracks: [{ ...REAL.tracks[0]!, artwork: 'https://cdn.test/art/broken.jpg' }, REAL.tracks[1]!] };
-    ctx.player.unmount();
-    mountSkeleton();
-    const engine = new FakeEngine();
-    const player = mountPlayer({ engine: engine as unknown as AudioEngine, manifest, now: () => EPOCH_MS + 50_000, offline: () => false });
-    ctx = { engine, player };
+    remountWithArt('https://cdn.test/art/broken.jpg', undefined);
     $('artwork').dispatchEvent(new Event('error'));
     expect($('artwork').hidden).toBe(true);
     expect(document.querySelector('svg.ring')).not.toBeNull();
+  });
+
+  it('a repaint with the same URL is a no-op: a failed image stays hidden after a locale change', () => {
+    remountWithArt(ART_A, ART_B);
+    $('artwork').dispatchEvent(new Event('error'));
+    setLocale('bo');
+    expect($('artwork').hidden).toBe(true);
+    expect($('artwork').getAttribute('src')).toBe(ART_A);
+  });
+
+  it('a repaint with the same URL keeps a loaded image visible (no flash)', () => {
+    remountWithArt(ART_A, ART_B);
+    $('artwork').dispatchEvent(new Event('load'));
+    setLocale('bo');
+    expect($('artwork').hidden).toBe(false);
+  });
+
+  it('a new URL hides the image again until it loads', () => {
+    remountWithArt(ART_A, ART_B);
+    $('artwork').dispatchEvent(new Event('load'));
+    ctx.engine.emit('track', 1);
+    expect($('artwork').getAttribute('src')).toBe(ART_B);
+    expect($('artwork').hidden).toBe(true);
+    $('artwork').dispatchEvent(new Event('load'));
+    expect($('artwork').hidden).toBe(false);
+  });
+
+  it('a new URL after a failure gets a fresh chance', () => {
+    remountWithArt(ART_A, ART_B);
+    $('artwork').dispatchEvent(new Event('error'));
+    ctx.engine.emit('track', 1);
+    $('artwork').dispatchEvent(new Event('load'));
+    expect($('artwork').hidden).toBe(false);
+  });
+
+  it('a load event that arrives after the track lost its artwork does not show the image', () => {
+    remountWithArt(ART_A, undefined);
+    ctx.engine.emit('track', 1);
+    $('artwork').dispatchEvent(new Event('load'));
+    expect($('artwork').hidden).toBe(true);
+  });
+
+  it('unmount removes the load listener', () => {
+    remountWithArt(ART_A, ART_B);
+    ctx.player.unmount();
+    $('artwork').dispatchEvent(new Event('load'));
+    expect($('artwork').hidden).toBe(true);
+  });
+});
+
+describe('kora ring state (M9)', () => {
+  it('the halo is marked active while loading, playing or buffering, and not while idle, paused or in error', () => {
+    const halo = document.querySelector('.halo')!;
+    expect(halo.hasAttribute('data-active')).toBe(false);
+    for (const s of ['loading', 'playing', 'buffering'] as const) {
+      ctx.engine.emit('state', s);
+      expect(halo.hasAttribute('data-active'), s).toBe(true);
+    }
+    for (const s of ['paused', 'error', 'idle'] as const) {
+      ctx.engine.emit('state', s);
+      expect(halo.hasAttribute('data-active'), s).toBe(false);
+    }
+  });
+
+  it('the ring stays hidden from assistive technology in both states', () => {
+    ctx.engine.emit('state', 'playing');
+    expect(document.querySelector('svg.ring')!.getAttribute('aria-hidden')).toBe('true');
+  });
+});
+
+describe('footer caps (M9)', () => {
+  it('the footer carries the caps class and the English catalog text is sentence case (CSS uppercases it)', () => {
+    expect($('footer').classList.contains('caps')).toBe(true);
+    expect($('footer').querySelector('span')!.textContent).toBe('Marpo Ri · 3,700 m · 1645');
   });
 });
 
@@ -408,6 +495,26 @@ describe('presence badge', () => {
     expect($('badge').textContent).toBe('—');
     p.emit({ state: 'offline', count: 9 });
     expect($('badge').textContent).toBe('—');
+  });
+
+  it('the dot is live only while the badge shows a real count, never with the placeholder', () => {
+    const dot = document.querySelector('.dot')!;
+    expect(dot.hasAttribute('data-live')).toBe(false);
+    const p = presenceStub();
+    remount(p);
+    const liveDot = document.querySelector('.dot')!;
+    expect(liveDot.hasAttribute('data-live')).toBe(false);
+    p.emit({ state: 'watching', count: 2 });
+    expect(liveDot.hasAttribute('data-live')).toBe(true);
+    p.emit({ state: 'backoff', count: 2 });
+    expect($('badge').textContent).toBe('—');
+    expect(liveDot.hasAttribute('data-live')).toBe(false);
+    p.emit({ state: 'listening', count: null });
+    expect(liveDot.hasAttribute('data-live')).toBe(false);
+  });
+
+  it('the dot stays hidden from assistive technology', () => {
+    expect(document.querySelector('.dot')!.getAttribute('aria-hidden')).toBe('true');
   });
 
   it('unmount unsubscribes from presence', () => {

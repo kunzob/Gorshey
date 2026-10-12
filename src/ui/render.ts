@@ -68,11 +68,17 @@ export function mountPlayer(opts: {
     return artist ? artist[locale === 'bo' ? 'bo' : 'en'] : '';
   };
 
+  /**
+   * The image is hidden whenever its source changes and shown only on `load` (hidden again on `error`), so no
+   * broken-image icon ever shows. Repainting with the same URL is a no-op: it keeps a loaded image visible and a
+   * failed one hidden. The image sits absolutely inside the fixed-size halo, so hiding it never shifts layout.
+   */
   function paintArtwork(): void {
     const art = manifest.tracks[trackIdx]?.artwork;
     if (art) {
+      if (r.artwork.getAttribute('src') === art) return;
+      r.artwork.hidden = true;
       r.artwork.src = art;
-      r.artwork.hidden = false;
     } else {
       r.artwork.removeAttribute('src');
       r.artwork.hidden = true;
@@ -93,12 +99,17 @@ export function mountPlayer(opts: {
     r.play.textContent = t(playLabelKey(state));
     r.position.textContent = positionLabel(positionSec, duration(), active);
     setRing(r.ringFill, active ? positionSec : 0, duration());
+    r.halo.toggleAttribute('data-active', active);
   }
 
-  /** Listener count only while watching or listening with a number; otherwise the placeholder (never a fake count). */
+  /**
+   * Listener count only while watching or listening with a number; otherwise the placeholder (never a fake count).
+   * The dot turns live (gold, pulsing) only with a real count, so the placeholder never looks live.
+   */
   function paintBadge(c: { state: string; count: number | null } | null): void {
     const live = c !== null && (c.state === 'listening' || c.state === 'watching') && c.count !== null;
     r.badge.textContent = live ? t('badge.listeners', { n: c.count as number }) : t('badge.unknown');
+    r.dot.toggleAttribute('data-live', live);
   }
 
   function paintStatus(): void {
@@ -143,7 +154,13 @@ export function mountPlayer(opts: {
   const onArtError = (): void => {
     r.artwork.hidden = true;
   };
+  // A late load for a source the current track no longer has (or no source at all) changes nothing.
+  const onArtLoad = (): void => {
+    const art = manifest.tracks[trackIdx]?.artwork;
+    if (art && r.artwork.getAttribute('src') === art) r.artwork.hidden = false;
+  };
   r.artwork.addEventListener('error', onArtError);
+  r.artwork.addEventListener('load', onArtLoad);
 
   const onPlay = (): void => {
     if (ACTIVE.includes(state)) engine.pause();
@@ -175,6 +192,7 @@ export function mountPlayer(opts: {
       offTick();
       offLocale();
       r.artwork.removeEventListener('error', onArtError);
+      r.artwork.removeEventListener('load', onArtLoad);
       r.play.removeEventListener('click', onPlay);
       r.locale.removeEventListener('click', onLocale);
       window.removeEventListener('online', onNetwork);
