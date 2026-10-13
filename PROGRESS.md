@@ -15,7 +15,7 @@ The agent updates this file at the end of every task. Newest notes at the bottom
 - [x] M7  Media Session: accepted by Kunshe (evidence: 8283f6f, c4562db; live checks confirmed)
 - [x] M8  PWA (manifest + service worker): accepted by Kunshe (evidence: 0029194, c2c2d0b; live checks confirmed)
 - [x] M9  Theme polish: accepted by Kunshe (evidence: 1353a96, ed0535c, caa5509, ab57b34; Lighthouse and visual review confirmed)
-- [ ] M10 QA (devices, Tibetan rendering, security review) (automated pass, security review, fixes F2-F8 and F14 done, secrets moved out of the repo in code; device matrix pending)
+- [ ] M10 QA (devices, Tibetan rendering, security review) (automated pass, security review, fixes F2-F8 and F14 done and F14 confirmed in Chrome, secrets moved out of the repo; desktop QA rows pending)
 - [ ] M11 Deploy
 
 ## Decisions made during the build
@@ -267,6 +267,8 @@ The agent updates this file at the end of every task. Newest notes at the bottom
   (`%APPDATA%\gorshey\supabase-service-key.env`, `%APPDATA%\gorshey\r2-credentials.env`, or `GORSHEY_SECRETS_DIR`),
   rotate the Supabase secret key once after the move, add the `.claude/settings.json` deny rules for the folder, and
   confirm `npm run upload` no longer refuses (it refuses while `tools/.supabase-service-key.env` exists).
+  Kunshe, 2026-10-13: file moved to `%APPDATA%\gorshey\` (no R2 file exists yet), key rotated, deny rules added.
+  Open: confirm `npm run upload` passes its preflight on the next real upload.
 
 ## M8 PWA
 - No new dependency: `vite-plugin-pwa` 2.0.0 and workbox 7.4.1 are devDependencies since M0 (42ccfde). Build-time only;
@@ -529,3 +531,6 @@ Process notes (honest record):
   `r2-credentials.env`. `.gitignore` ignores credential-named files anywhere. ARCHITECTURE §10, CLAUDE.md and the
   M00 human setup updated. Tests: temp directories and fake empty files only (24). Kunshe moves the files, rotates the
   key once after, and adds the deny rules (M11 checklist).
+- **F14 confirmed by Kunshe (2026-10-14)** in desktop Chrome (`npm run dev`): paused across a track boundary, title,
+  artist, artwork and next-up changed together, never named the same song, and the strip did not move vertically.
+- M10 stays open until Kunshe's desktop rows in `docs/QA-CHECKLIST.md` are filled in.
