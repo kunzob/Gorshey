@@ -66,6 +66,9 @@
 .player {
   max-width: var(--max-width);
   min-height: 100dvh; /* border-box (base.css): padding stays inside the viewport height */
+  /* A definite height lets the halo (the only shrinkable row) give way when the rows need more room, instead of the
+     page scrolling. If even a 160 px ring does not fit, `safe` keeps the top reachable and the page scrolls. */
+  height: 100dvh;
   padding:
     max(var(--space-2), env(safe-area-inset-top))
     max(var(--space-2), env(safe-area-inset-right))
@@ -76,8 +79,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  justify-content: safe center;
   gap: var(--space-gap);
   text-align: center;
+}
+
+/* Every row keeps its content height; only the halo flexes. */
+.player > :not(.halo) {
+  flex-shrink: 0;
 }
 
 /* Until locale.ts has written <html lang> (and data-lang-ready), the player is laid out but not shown, so a bo visitor
@@ -187,10 +196,15 @@ html:not([data-player-ready]) .player {
 }
 
 /* Kora ring over the palace: the circle is rotated so progress starts at 12 o'clock and runs clockwise. */
+/* Square, sized by its height: the token size, or less when the other rows need the room (narrow phones, where the
+   token is width-bound, and long Tibetan text), never below 160 px. Its width follows through aspect-ratio. */
 .halo {
   position: relative;
-  width: min(var(--ring-size), 300px);
+  flex: 0 1 auto;
+  width: auto;
   height: min(var(--ring-size), 300px);
+  min-height: 160px;
+  aspect-ratio: 1;
 }
 
 .ring {

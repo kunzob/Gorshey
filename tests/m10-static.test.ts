@@ -33,3 +33,29 @@ describe('player hidden until the first data is painted (M10)', () => {
     expect(readFileSync('public/noscript.css', 'utf8')).toMatch(/\.player\s*\{[^}]*visibility:\s*visible\s*!important/);
   });
 });
+
+describe('the ring gives way instead of the page scrolling (M10 device simulation)', () => {
+  const css = readFileSync('src/styles/components.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const body = (sel: string): string => {
+    const m = css.match(new RegExp(`(?:^|\\n)${sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{([^}]*)\\}`));
+    return m ? m[1]! : '';
+  };
+
+  it('the halo is the one row that shrinks: square, flexible, never below 160 px', () => {
+    const halo = body('.halo');
+    expect(halo).toMatch(/flex:\s*0 1 auto/);
+    expect(halo).toMatch(/aspect-ratio:\s*1/);
+    expect(halo).toMatch(/min-height:\s*160px/);
+    expect(body('.player > :not(.halo)')).toMatch(/flex-shrink:\s*0/);
+  });
+
+  it('the column has a definite height to shrink into, and keeps its top reachable when content still overflows', () => {
+    const player = body('.player');
+    expect(player).toMatch(/(?:^|;|\s)height:\s*100dvh/);
+    expect(player).toMatch(/justify-content:\s*safe center/);
+  });
+
+  it('the ring token is back to the 430 px allowance (the flex halo absorbs taller rows)', () => {
+    expect(readFileSync('src/styles/tokens.css', 'utf8')).toMatch(/--ring-size:\s*clamp\(160px, calc\(100dvh - 430px\)/);
+  });
+});
