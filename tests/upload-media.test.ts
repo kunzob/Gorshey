@@ -66,7 +66,7 @@ describe('planUploads → storage backend keys', () => {
 
     expect(exists).toHaveBeenCalledWith('audio/a1b2c3d4e5f6.m4a');
     expect(upload).toHaveBeenCalledWith(audio.localPath, 'audio/a1b2c3d4e5f6.m4a', 'audio/mp4');
-    for (const [key] of upload.mock.calls) {
+    for (const [, key] of upload.mock.calls) {
       expect(key).not.toMatch(/^\//);
       expect(key).not.toMatch(/^https?:\/\//);
     }
