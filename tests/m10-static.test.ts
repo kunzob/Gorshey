@@ -17,3 +17,19 @@ describe('native UI follows the night theme (M10)', () => {
     expect(tokens).toMatch(/:root\[data-theme="light"\]\s*\{[^}]*color-scheme:\s*light/);
   });
 });
+
+describe('player hidden until the first data is painted (M10)', () => {
+  const css = readFileSync('src/styles/components.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+
+  it('hides the player with visibility until <html data-player-ready>, with the same CSS-only fallback', () => {
+    const rule = css.match(/html:not\(\[data-player-ready\]\) \.player\s*\{([^}]*)\}/);
+    expect(rule, 'html:not([data-player-ready]) .player').not.toBeNull();
+    expect(rule![1]).toMatch(/visibility:\s*hidden/);
+    expect(rule![1]).not.toMatch(/display:/);
+    expect(rule![1]).toMatch(/animation:\s*lang-ready-fallback 0s 6s forwards !important/);
+  });
+
+  it('noscript.css still shows the player at once without JS', () => {
+    expect(readFileSync('public/noscript.css', 'utf8')).toMatch(/\.player\s*\{[^}]*visibility:\s*visible\s*!important/);
+  });
+});

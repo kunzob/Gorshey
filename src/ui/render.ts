@@ -4,7 +4,7 @@ import type { Manifest } from '../core/types';
 import { brandParts, getLocale, onLocaleChange, setLocale, t, tFor, titleParts, type LangRun } from '../i18n/i18n';
 import { LOCALES, type Locale } from '../i18n/locales';
 import { refs } from './dom';
-import { applyDocumentLang } from './locale';
+import { applyDocumentLang, markPlayerReady } from './locale';
 import { setRing } from './KoraRing';
 import { localeToggleTarget } from './LocaleToggle';
 import { buildIndex, shownTracks } from '../core/schedule';
@@ -230,6 +230,7 @@ export function mountPlayer(opts: {
   const offPresence = opts.presence?.onChange((c) => paintBadge(c)) ?? (() => {});
 
   paintLocale(getLocale());
+  markPlayerReady(); // after the first paint with data: nothing in the hidden column can shift any more
 
   return {
     unmount(): void {
@@ -277,4 +278,5 @@ export function showBootFailure(offline: boolean): void {
   r.status.textContent = t(offline ? 'player.offline' : 'player.error');
   r.play.textContent = t('player.play');
   r.play.disabled = true;
+  markPlayerReady();
 }

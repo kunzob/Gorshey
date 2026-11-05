@@ -89,6 +89,14 @@ html:not([data-lang-ready]) .player {
   animation: lang-ready-fallback 0s 6s forwards !important;
 }
 
+/* Same for the first data (locale.ts markPlayerReady, after mountPlayer's first paint or showBootFailure): the language
+   gate opens before the track manifest arrives, and a title or next-up line longer than its reserved lines would move
+   the centred column when the data fills in (M10, Slow 4G: CLS 0.157 bo / 0.122 en). Same fallback and noscript.css. */
+html:not([data-player-ready]) .player {
+  visibility: hidden;
+  animation: lang-ready-fallback 0s 6s forwards !important;
+}
+
 @keyframes lang-ready-fallback {
   to {
     visibility: visible;

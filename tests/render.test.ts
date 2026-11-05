@@ -145,6 +145,36 @@ describe('single lang writer', () => {
   });
 });
 
+// M10: the language gate opens before the track manifest arrives, so a title or next-up line longer than its reserved
+// lines still moved the centred column when the data filled in (Slow 4G: CLS 0.157 bo / 0.122 en). A second gate
+// keeps the player hidden until the first data is painted.
+describe('player stays hidden until the first data is painted (M10)', () => {
+  it('mounting the player marks <html data-player-ready> after the first paint with data', () => {
+    ctx.player.unmount();
+    mountSkeleton();
+    document.documentElement.removeAttribute('data-player-ready');
+    ctx = start();
+    expect(document.documentElement.hasAttribute('data-player-ready')).toBe(true);
+    expect($('title').textContent).not.toBe('—');
+  });
+
+  it('boot failure marks the player ready too, so the offline or error state is visible', () => {
+    ctx.player.unmount();
+    mountSkeleton();
+    document.documentElement.removeAttribute('data-player-ready');
+    showBootFailure(true);
+    expect(document.documentElement.hasAttribute('data-player-ready')).toBe(true);
+    ctx = start();
+  });
+
+  it('applying the language alone does not mark the player ready', () => {
+    document.documentElement.removeAttribute('data-player-ready');
+    applyDocumentLang('bo');
+    expect(document.documentElement.hasAttribute('data-player-ready')).toBe(false);
+    applyDocumentLang('en');
+  });
+});
+
 describe('player stays hidden until the language is applied (M10 F5)', () => {
   it('applyDocumentLang marks <html> ready together with the lang', () => {
     document.documentElement.removeAttribute('data-lang-ready');
