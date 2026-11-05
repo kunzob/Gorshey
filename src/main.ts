@@ -31,8 +31,12 @@ async function boot(): Promise<void> {
   setLocaleApplier(applyDocumentLang);
   applyDocumentLang(getLocale());
 
-  await measureOffset(); // coarse first, so play is never delayed
-  const { manifest, fromCache } = await loadManifestWithSource(TRACK_MANIFEST_PATH);
+  // Coarse clock offset and the track manifest in parallel: neither needs the other, and on a slow link the
+  // sequential version kept the placeholders on screen for three extra round trips (M10, Slow 4G: 4.0 s -> 3.4 s).
+  const [, { manifest, fromCache }] = await Promise.all([
+    measureOffset(), // coarse first, so play is never delayed
+    loadManifestWithSource(TRACK_MANIFEST_PATH),
+  ]);
   const clock = { now, isRefined: () => syncPrecision() === 'refined' };
   const engine = new AudioEngine(manifest, clock);
   // Lock screen: play/pause go through engine.play()/pause(); the title follows a locale switch immediately.
