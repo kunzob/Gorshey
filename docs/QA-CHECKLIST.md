@@ -7,12 +7,13 @@ Measurements and screenshots live in `scratch/m10/` (git-ignored).
 
 | Check | How | Result |
 | :--- | :--- | :--- |
-| Unit and static tests | `npm run test:coverage` | 615 passing, 100% branches on `src/core` (after the M10 fixes) |
+| Unit and static tests | `npm run test` | 670 passing, 1 skipped (2026-11-05, after the M10 follow-ups) |
 | Lint, types, sinks | `npm run lint` (incl. `no-eval`, `no-implied-eval`, `no-new-func`) | clean |
 | Build, precache, secrets, budget | `npm run build` | 12 precache entries, 0 secret-like hits, 50.0 KB of 60 KB (after the M10 fixes) |
-| Browser e2e | `npm run e2e` (headless Chrome, WebSocket stubbed) | 18/18: load, lang, no clipped Tibetan boxes, no horizontal scroll, play, presence placeholder, pause, toggle |
+| Browser e2e | `npm run e2e` (headless Chrome, WebSocket stubbed) | 29/29 (2026-11-05): the 18 player checks (load, lang, no clipped Tibetan boxes, no horizontal scroll, play, presence placeholder, pause, toggle) plus 11 on `tests/tibetan-render.html` (see below) |
+| Tibetan rendering page | `npm run e2e`, page served at `/__e2e/tibetan-render.html` with the built CSS | font face loaded; title clamp cuts no ink (control at 1.9 cuts 8 px); ink fits the title's line box (2.45: 0.10em / 0.02em to spare); wraps only after tsheg; same line box with the fallback; Tibetan not smaller than Latin; adjacent lines never touch (control at 1.5: 57 px) |
 | CSP | `tools/preview-headers.mjs` + headless Chrome | 0 violations, both locales, SW install and controlled reload |
-| CLS on boot | headless proxy, 3 runs per locale | after F5: en 0.0043, bo 0.0153, horizontal only (before: bo 0.0389 incl. a 0.0159 vertical lang flip) |
+| CLS on boot | headless proxy, 3 runs per locale | after F5: en 0.0043, bo 0.0153, horizontal only (before: bo 0.0389 incl. a 0.0159 vertical lang flip). After the M10 data gate (2026-11-05), first visit on Slow 4G with a long title and next-up: 0.0000 in en and bo (was 0.122 / 0.157) |
 | CLS after play | real CDP click, 10 s | 0; after F6 the column does not move at all on play or pause (was 10 / 13.7 px) |
 | Keyboard | Tab / Enter / Space via CDP | order: language toggle -> play; 2 px gold focus ring; Enter plays, Space pauses, toggle keeps focus |
 | Reduced motion | emulated media | dot pulse and ring transition off under `reduce` |
@@ -20,7 +21,8 @@ Measurements and screenshots live in `scratch/m10/` (git-ignored).
 | Text contrast | text made transparent, brightest background pixel | lowest 8.29:1 (artist); every text passes AAA |
 | robots.txt | `vite preview` and header preview | `text/plain`, not precached |
 
-Not automated here: WebKit/Safari, Firefox, real phones, screen readers, two-device sync.
+Not automated here: WebKit/Safari, Firefox, real phones, screen readers, two-device sync. The Tibetan page checks run in Chrome only:
+open the same page in Safari by hand (run `npm run e2e`, or serve `tests/tibetan-render.html` with the built CSS).
 
 ## Desktop (Kunshe, now)
 
