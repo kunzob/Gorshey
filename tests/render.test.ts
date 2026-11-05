@@ -145,6 +145,36 @@ describe('single lang writer', () => {
   });
 });
 
+// M10: the language gate opens before the track manifest arrives, so a title or next-up line longer than its reserved
+// lines still moved the centred column when the data filled in (Slow 4G: CLS 0.157 bo / 0.122 en). A second gate
+// keeps the player hidden until the first data is painted.
+describe('player stays hidden until the first data is painted (M10)', () => {
+  it('mounting the player marks <html data-player-ready> after the first paint with data', () => {
+    ctx.player.unmount();
+    mountSkeleton();
+    document.documentElement.removeAttribute('data-player-ready');
+    ctx = start();
+    expect(document.documentElement.hasAttribute('data-player-ready')).toBe(true);
+    expect($('title').textContent).not.toBe('—');
+  });
+
+  it('boot failure marks the player ready too, so the offline or error state is visible', () => {
+    ctx.player.unmount();
+    mountSkeleton();
+    document.documentElement.removeAttribute('data-player-ready');
+    showBootFailure(true);
+    expect(document.documentElement.hasAttribute('data-player-ready')).toBe(true);
+    ctx = start();
+  });
+
+  it('applying the language alone does not mark the player ready', () => {
+    document.documentElement.removeAttribute('data-player-ready');
+    applyDocumentLang('bo');
+    expect(document.documentElement.hasAttribute('data-player-ready')).toBe(false);
+    applyDocumentLang('en');
+  });
+});
+
 describe('player stays hidden until the language is applied (M10 F5)', () => {
   it('applyDocumentLang marks <html> ready together with the lang', () => {
     document.documentElement.removeAttribute('data-lang-ready');
@@ -251,6 +281,25 @@ describe('locale toggle', () => {
     ctx.engine.emit('track', 0);
     expect($('title').querySelector('span')!.lang).toBe('bo');
     expect($('subtitle').querySelector('span')!.lang).toBe('en');
+  });
+
+  // M10: the paragraph carries its run's language too, so an English subtitle in the Tibetan UI does not inherit the
+  // Tibetan line height (it wrapped to three 30 px lines and the page scrolled at 375x667).
+  it('the subtitle paragraph takes the language of its text in both UIs', () => {
+    for (const locale of ['bo', 'en'] as const) {
+      setLocale(locale);
+      ctx.engine.emit('track', 0);
+      expect($('subtitle').lang).toBe($('subtitle').querySelector('span')!.lang);
+    }
+  });
+
+  it('the subtitle placeholder is declared English like the text that replaces it (no boot height change)', () => {
+    expect(readFileSync('index.html', 'utf8')).toMatch(/<p id="subtitle"[^>]*\slang="en"/);
+  });
+
+  it('base.css resets the line height for :lang(en), so Latin blocks in the Tibetan UI do not inherit 1.9', () => {
+    const base = readFileSync('src/styles/base.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(base).toMatch(/:lang\(en\)\s*\{[^}]*line-height:\s*normal/);
   });
 });
 

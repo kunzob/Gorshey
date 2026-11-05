@@ -534,3 +534,62 @@ Process notes (honest record):
 - **F14 confirmed by Kunshe (2026-10-14)** in desktop Chrome (`npm run dev`): paused across a track boundary, title,
   artist, artwork and next-up changed together, never named the same song, and the strip did not move vertically.
 - M10 stays open until Kunshe's desktop rows in `docs/QA-CHECKLIST.md` are filled in.
+
+### M10 follow-ups (agent, 2026-11-05, on top of 0ea5a87)
+Ported from a parallel M10 pass that had not seen 0ea5a87; everything that duplicated work already here (eval lint,
+robots.txt, JWT decode in check-dist, scratch/ lint ignore, e2e, QA checklist) was dropped.
+- **Upload test on Linux/macOS (ed42013).** `tests/upload-media.test.ts` checked `upload()`'s first argument (the
+  local path) instead of the key: passed on Windows (`C:\`), failed on Linux/macOS (`/`). Test-only fix.
+- **English subtitle in the bo UI (be13d85).** The subtitle `<p>` inherited `lang="bo"` and line-height 1.9: a long
+  title took three 30 px lines (91 px instead of 60) and 375x667 scrolled. The paragraph now takes its run's language,
+  the placeholder is `lang="en"`, and `base.css` resets `:lang(en)` to `line-height: normal` (en pixel-identical).
+- **Title clamp shaved Tibetan marks (547d9c1).** Measured with the self-hosted font at size-adjust 125%: ink reaches
+  1.46em above and 0.87em below the baseline, beyond a 1.9 line box; the two-line clamp's clip cut 12-16 px of stacked
+  vowels (pixel diff, 375x667 and 1280x800, en and bo). `.title` uses `--bo-clamp-lh: 2.45` (>= 2.41 keeps both edges
+  inside) and `min-height: 2lh`, so the F14 fixed two-line box is unchanged in behaviour. The ring allowance goes from
+  430 to 465 px: with the real titles every tested size fits in en and bo, including 414x736 bo, which scrolled before
+  (741 px). The ring is smaller below about 765 px of height (375x667: 237 -> 202 px). **Visual sign-off needed.**
+  A claimed collision between wrapped lines at 1.9 did not reproduce here; next-up is unchanged.
+- **Faster boot (54051bb).** `main.ts` fetches the track manifest in parallel with the coarse clock offset. Slow 4G +
+  4x CPU, real manifest: data at about 3.4 s instead of 4.0 s.
+- **color-scheme (e8e8b4a).** `color-scheme: dark` on `:root` (light on the disabled light slot): native scrollbars
+  and controls follow the night theme.
+- **Data gate (40dc2c0).** F5's language gate opens before the track manifest arrives, so a title or next-up line
+  longer than its reserved lines still moved the column at boot (first visit, Slow 4G: CLS 0.157 bo / 0.122 en).
+  `html:not([data-player-ready]) .player` keeps it hidden until mountPlayer's first paint or showBootFailure
+  (`markPlayerReady` in locale.ts, still the only writer of document flags); same 6 s fallback and noscript.css.
+  After: 0.0000 in en and bo; FCP unchanged; script blocked -> visible at 6.1 s (also under reduced motion); JS off ->
+  at once.
+- **Tibetan rendering page (0b43eb9).** `tests/tibetan-render.html` in `npm run e2e` (Chrome, DevTools Fetch, SW
+  bypassed, built CSS): 11 checks with controls (see docs/QA-CHECKLIST.md). e2e now 29/29.
+- Still open for Kunshe: the desktop and phone rows in `docs/QA-CHECKLIST.md`, the Tibetan page in Safari, and the
+  visual sign-off on the smaller ring below 765 px.
+
+### Dependency security (agent, 2026-11-05)
+GitHub reported 16 Dependabot alerts on main (3 high, 8 moderate, 5 low); `npm audit` locally: 18 (2 high, 13
+moderate, 3 low). **None is in shipped code**: the only runtime dependency, `@supabase/realtime-js`, is not flagged;
+every alert is in a dev, test, lint or build tool.
+- Fixed: `happy-dom` 20.14.5 -> 21.0.4 (high: import-alias code execution and SSRF when parsing untrusted HTML; the
+  tests only parse our own index.html; the only fix is the 21.x major, all 670 tests pass unchanged), `vite`
+  8.3.2 -> 8.3.6 (high: launch-editor argument escaping on Windows, dev server only), plus in-range updates of
+  `fast-uri`, `serialize-javascript` and `@eslint/config-array` dependencies (`npm audit fix`, no --force).
+- Left open (12 moderate, 2 low): npm's only "fix" is a major downgrade (eslint 10 -> 9, typescript-eslint
+  8.72 -> 8.36, vite-plugin-pwa 2.0 -> 1.1). They are minimatch/glob pattern DoS, a glob AbortSignal bypass and a
+  deepmerge prototype-poisoning issue inside lint and build tooling, reachable only through our own config and glob
+  patterns, never through user input. Re-run `npm audit` when those packages release fixes on their current majors.
+- Verified after the update: lint clean, 670 tests pass (1 skipped), build OK (0 secret-like hits, 12 precache
+  entries, 50.3 of 60 KB), `npm run e2e` 29/29.
+
+### Ring and device simulation (agent, 2026-11-05)
+- **The ring gives way instead of the page scrolling (c4d6147).** Device emulation with the real titles showed the
+  465 px allowance (547d9c1) could not help where the ring is width-bound or already at 160 px (iPhone SE 1st gen en
+  started to scroll, Galaxy S8 bo got worse). The halo is now the one row that shrinks (`flex: 0 1 auto`,
+  `aspect-ratio: 1`, `min-height: 160px`; `.player` `height: 100dvh`, `justify-content: safe center`) and the
+  allowance is back to 430 px, so the ring is exactly as large as on main wherever main fitted. This replaces the
+  "smaller ring below 765 px" item: no visual sign-off needed for it any more.
+- Simulated device matrix in `docs/QA-CHECKLIST.md` (Chromium emulation, not real devices): 41/43. The two failures
+  are the iPhone SE 1st gen (320x568) with a long title; with the real titles it scrolls 47 px in bo only.
+  **Open (design decision):** a smaller minimum ring or tighter spacing for screens under about 600 px of height.
+- Investigated and dropped: an apparent "frozen tab plays silence" bug. It came from the simulation fixture (an audio
+  file shorter than its manifest duration); with matching durations a frozen page keeps playing and stays in sync.
+  No engine change.

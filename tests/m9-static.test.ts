@@ -215,12 +215,23 @@ describe('the title box never changes height between tracks (M10 F14)', () => {
 
   it('the title reserves two Tibetan lines and clamps at two (gorshey-tibetan §2: min-height + line-clamp)', () => {
     const t = own('.title')!;
-    expect(decl(t.body, 'min-height')).toBe('calc(2 * 1.9em)');
+    // M10: two lines of the title's own (clamp-safe) line height.
+    expect(decl(t.body, 'min-height')).toBe('2lh');
     expect(decl(t.body, 'display')).toBe('-webkit-box');
     expect(decl(t.body, '-webkit-line-clamp')).toBe('2');
     expect(decl(t.body, '-webkit-box-orient')).toBe('vertical');
     expect(decl(t.body, 'overflow')).toBe('hidden');
     expect(decl(t.body, 'height')).toBeNull();
+  });
+
+  // M10: measured with the self-hosted font at size-adjust 125%, Tibetan ink reaches 1.46em above and 0.87em below
+  // the baseline. At line-height 1.9 the clamp's overflow clip shaved 12-16 px of stacked vowel marks; a line box keeps
+  // both edges inside from 2.41 up (half-leading >= 0.65em with ascent 0.89 / descent 0.22).
+  it('the clamped title uses a line height at which the clip never shaves Tibetan marks (>= 2.41)', () => {
+    const t = own('.title')!;
+    expect(decl(t.body, 'line-height')).toBe('var(--bo-clamp-lh)');
+    const tokens = readFileSync('src/styles/tokens.css', 'utf8');
+    expect(Number(tokens.match(/--bo-clamp-lh:\s*([\d.]+)/)![1])).toBeGreaterThanOrEqual(2.41);
   });
 
   it('short screens keep the two-line reservation (only the font size shrinks)', () => {

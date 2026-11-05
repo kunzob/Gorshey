@@ -14,6 +14,12 @@ body {
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Latin blocks inside the Tibetan UI (the English subtitle) must not inherit the Tibetan line height from ancestors.
+   No-op in the English UI, where normal is already the inherited value. */
+:lang(en) {
+  line-height: normal;
+}
+
 /* Tibetan text: line-height ≥ 1.9 so stacked marks never clip; no synthetic bold or italic. */
 :lang(bo) {
   font-family: system-ui, ui-sans-serif, sans-serif, "Gorshey Tibetan", "Gorshey Tibetan Fallback", serif;

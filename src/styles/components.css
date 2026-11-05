@@ -66,6 +66,9 @@
 .player {
   max-width: var(--max-width);
   min-height: 100dvh; /* border-box (base.css): padding stays inside the viewport height */
+  /* A definite height lets the halo (the only shrinkable row) give way when the rows need more room, instead of the
+     page scrolling. If even a 160 px ring does not fit, `safe` keeps the top reachable and the page scrolls. */
+  height: 100dvh;
   padding:
     max(var(--space-2), env(safe-area-inset-top))
     max(var(--space-2), env(safe-area-inset-right))
@@ -76,8 +79,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  justify-content: safe center;
   gap: var(--space-gap);
   text-align: center;
+}
+
+/* Every row keeps its content height; only the halo flexes. */
+.player > :not(.halo) {
+  flex-shrink: 0;
 }
 
 /* Until locale.ts has written <html lang> (and data-lang-ready), the player is laid out but not shown, so a bo visitor
@@ -85,6 +94,14 @@
    the layout is kept. If JS never runs at all, a zero-length visibility switch reveals it after 6 s (not motion, so
    it is exempt from reduced motion: this rule's !important outranks the `*` rule there). Without JS, noscript.css. */
 html:not([data-lang-ready]) .player {
+  visibility: hidden;
+  animation: lang-ready-fallback 0s 6s forwards !important;
+}
+
+/* Same for the first data (locale.ts markPlayerReady, after mountPlayer's first paint or showBootFailure): the language
+   gate opens before the track manifest arrives, and a title or next-up line longer than its reserved lines would move
+   the centred column when the data fills in (M10, Slow 4G: CLS 0.157 bo / 0.122 en). Same fallback and noscript.css. */
+html:not([data-player-ready]) .player {
   visibility: hidden;
   animation: lang-ready-fallback 0s 6s forwards !important;
 }
@@ -179,10 +196,15 @@ html:not([data-lang-ready]) .player {
 }
 
 /* Kora ring over the palace: the circle is rotated so progress starts at 12 o'clock and runs clockwise. */
+/* Square, sized by its height: the token size, or less when the other rows need the room (narrow phones, where the
+   token is width-bound, and long Tibetan text), never below 160 px. Its width follows through aspect-ratio. */
 .halo {
   position: relative;
-  width: min(var(--ring-size), 300px);
+  flex: 0 1 auto;
+  width: auto;
   height: min(var(--ring-size), 300px);
+  min-height: 160px;
+  aspect-ratio: 1;
 }
 
 .ring {
@@ -271,7 +293,8 @@ html:not([data-lang-ready]) .player {
 .title {
   margin: 0;
   font-size: 1.25rem;
-  min-height: calc(2 * 1.9em);
+  line-height: var(--bo-clamp-lh); /* the clamp cuts between whole line boxes, and the ink fits inside them */
+  min-height: 2lh; /* exactly two title lines, so a repaint never resizes the strip */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
