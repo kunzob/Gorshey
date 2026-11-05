@@ -564,3 +564,18 @@ robots.txt, JWT decode in check-dist, scratch/ lint ignore, e2e, QA checklist) w
   bypassed, built CSS): 11 checks with controls (see docs/QA-CHECKLIST.md). e2e now 29/29.
 - Still open for Kunshe: the desktop and phone rows in `docs/QA-CHECKLIST.md`, the Tibetan page in Safari, and the
   visual sign-off on the smaller ring below 765 px.
+
+### Dependency security (agent, 2026-11-05)
+GitHub reported 16 Dependabot alerts on main (3 high, 8 moderate, 5 low); `npm audit` locally: 18 (2 high, 13
+moderate, 3 low). **None is in shipped code**: the only runtime dependency, `@supabase/realtime-js`, is not flagged;
+every alert is in a dev, test, lint or build tool.
+- Fixed: `happy-dom` 20.14.5 -> 21.0.4 (high: import-alias code execution and SSRF when parsing untrusted HTML; the
+  tests only parse our own index.html; the only fix is the 21.x major, all 670 tests pass unchanged), `vite`
+  8.3.2 -> 8.3.6 (high: launch-editor argument escaping on Windows, dev server only), plus in-range updates of
+  `fast-uri`, `serialize-javascript` and `@eslint/config-array` dependencies (`npm audit fix`, no --force).
+- Left open (12 moderate, 2 low): npm's only "fix" is a major downgrade (eslint 10 -> 9, typescript-eslint
+  8.72 -> 8.36, vite-plugin-pwa 2.0 -> 1.1). They are minimatch/glob pattern DoS, a glob AbortSignal bypass and a
+  deepmerge prototype-poisoning issue inside lint and build tooling, reachable only through our own config and glob
+  patterns, never through user input. Re-run `npm audit` when those packages release fixes on their current majors.
+- Verified after the update: lint clean, 670 tests pass (1 skipped), build OK (0 secret-like hits, 12 precache
+  entries, 50.3 of 60 KB), `npm run e2e` 29/29.
