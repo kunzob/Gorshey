@@ -538,29 +538,29 @@ Process notes (honest record):
 ### M10 follow-ups (agent, 2026-11-05, on top of 0ea5a87)
 Ported from a parallel M10 pass that had not seen 0ea5a87; everything that duplicated work already here (eval lint,
 robots.txt, JWT decode in check-dist, scratch/ lint ignore, e2e, QA checklist) was dropped.
-- **Upload test on Linux/macOS (9bda592).** `tests/upload-media.test.ts` checked `upload()`'s first argument (the
+- **Upload test on Linux/macOS (ed42013).** `tests/upload-media.test.ts` checked `upload()`'s first argument (the
   local path) instead of the key: passed on Windows (`C:\`), failed on Linux/macOS (`/`). Test-only fix.
-- **English subtitle in the bo UI (dd1f368).** The subtitle `<p>` inherited `lang="bo"` and line-height 1.9: a long
+- **English subtitle in the bo UI (be13d85).** The subtitle `<p>` inherited `lang="bo"` and line-height 1.9: a long
   title took three 30 px lines (91 px instead of 60) and 375x667 scrolled. The paragraph now takes its run's language,
   the placeholder is `lang="en"`, and `base.css` resets `:lang(en)` to `line-height: normal` (en pixel-identical).
-- **Title clamp shaved Tibetan marks (1a48025).** Measured with the self-hosted font at size-adjust 125%: ink reaches
+- **Title clamp shaved Tibetan marks (547d9c1).** Measured with the self-hosted font at size-adjust 125%: ink reaches
   1.46em above and 0.87em below the baseline, beyond a 1.9 line box; the two-line clamp's clip cut 12-16 px of stacked
   vowels (pixel diff, 375x667 and 1280x800, en and bo). `.title` uses `--bo-clamp-lh: 2.45` (>= 2.41 keeps both edges
   inside) and `min-height: 2lh`, so the F14 fixed two-line box is unchanged in behaviour. The ring allowance goes from
   430 to 465 px: with the real titles every tested size fits in en and bo, including 414x736 bo, which scrolled before
   (741 px). The ring is smaller below about 765 px of height (375x667: 237 -> 202 px). **Visual sign-off needed.**
   A claimed collision between wrapped lines at 1.9 did not reproduce here; next-up is unchanged.
-- **Faster boot (1d3364e).** `main.ts` fetches the track manifest in parallel with the coarse clock offset. Slow 4G +
+- **Faster boot (54051bb).** `main.ts` fetches the track manifest in parallel with the coarse clock offset. Slow 4G +
   4x CPU, real manifest: data at about 3.4 s instead of 4.0 s.
-- **color-scheme (795cb9c).** `color-scheme: dark` on `:root` (light on the disabled light slot): native scrollbars
+- **color-scheme (e8e8b4a).** `color-scheme: dark` on `:root` (light on the disabled light slot): native scrollbars
   and controls follow the night theme.
-- **Data gate (744f97c).** F5's language gate opens before the track manifest arrives, so a title or next-up line
+- **Data gate (40dc2c0).** F5's language gate opens before the track manifest arrives, so a title or next-up line
   longer than its reserved lines still moved the column at boot (first visit, Slow 4G: CLS 0.157 bo / 0.122 en).
   `html:not([data-player-ready]) .player` keeps it hidden until mountPlayer's first paint or showBootFailure
   (`markPlayerReady` in locale.ts, still the only writer of document flags); same 6 s fallback and noscript.css.
   After: 0.0000 in en and bo; FCP unchanged; script blocked -> visible at 6.1 s (also under reduced motion); JS off ->
   at once.
-- **Tibetan rendering page (cc2ed74).** `tests/tibetan-render.html` in `npm run e2e` (Chrome, DevTools Fetch, SW
+- **Tibetan rendering page (0b43eb9).** `tests/tibetan-render.html` in `npm run e2e` (Chrome, DevTools Fetch, SW
   bypassed, built CSS): 11 checks with controls (see docs/QA-CHECKLIST.md). e2e now 29/29.
 - Still open for Kunshe: the desktop and phone rows in `docs/QA-CHECKLIST.md`, the Tibetan page in Safari, and the
   visual sign-off on the smaller ring below 765 px.
