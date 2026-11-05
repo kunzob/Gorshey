@@ -11,9 +11,13 @@
   --space-gap: 8px;
   --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; /* system stack, no download */
   --touch: 48px;
+  /* Line height for the line-clamped Tibetan title. Measured in M10 with the self-hosted font at size-adjust 125%:
+     ink reaches 1.46em above and 0.87em below the baseline, so at 1.9 the clamp's overflow clip shaved the tops of
+     stacked vowels (12 to 16 px of ink). From 2.41 up both fit inside the line box. 1.9 stays the Tibetan default. */
+  --bo-clamp-lh: 2.45;
   --max-width: 460px;
-  /* Ring diameter: the width-based size, but never more than the height left after the other rows (about 430 px, which leaves room for a two-line next-up). */
-  --ring-size: clamp(160px, calc(100dvh - 430px), min(78vw, 360px));
+  /* Ring diameter: the width-based size, but never more than the height left after the other rows (about 465 px: the taller two-line title from M10 and the bo rows at 414x736; it leaves room for a two-line next-up). */
+  --ring-size: clamp(160px, calc(100dvh - 465px), min(78vw, 360px));
 }
 
 /* Light-mode slots are defined but not enabled (ARCHITECTURE §7). */
