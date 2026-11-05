@@ -252,6 +252,25 @@ describe('locale toggle', () => {
     expect($('title').querySelector('span')!.lang).toBe('bo');
     expect($('subtitle').querySelector('span')!.lang).toBe('en');
   });
+
+  // M10: the paragraph carries its run's language too, so an English subtitle in the Tibetan UI does not inherit the
+  // Tibetan line height (it wrapped to three 30 px lines and the page scrolled at 375x667).
+  it('the subtitle paragraph takes the language of its text in both UIs', () => {
+    for (const locale of ['bo', 'en'] as const) {
+      setLocale(locale);
+      ctx.engine.emit('track', 0);
+      expect($('subtitle').lang).toBe($('subtitle').querySelector('span')!.lang);
+    }
+  });
+
+  it('the subtitle placeholder is declared English like the text that replaces it (no boot height change)', () => {
+    expect(readFileSync('index.html', 'utf8')).toMatch(/<p id="subtitle"[^>]*\slang="en"/);
+  });
+
+  it('base.css resets the line height for :lang(en), so Latin blocks in the Tibetan UI do not inherit 1.9', () => {
+    const base = readFileSync('src/styles/base.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(base).toMatch(/:lang\(en\)\s*\{[^}]*line-height:\s*normal/);
+  });
 });
 
 describe('update slot', () => {

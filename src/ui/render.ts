@@ -127,6 +127,8 @@ export function mountPlayer(opts: {
     const runs = titleParts(manifest.tracks[trackIdx]!.title, locale);
     writeRuns(r.title, [runs[0]!]);
     writeRuns(r.subtitle, [runs[1]!]);
+    // The block takes its text's language, so :lang(bo) line height never reaches an English subtitle in bo mode.
+    r.subtitle.lang = runs[1]!.lang;
     r.artist.textContent = artistFor(locale);
     writeNextUp(r.nextup, t('player.nextUp'), nextUpRunsFor(manifest, nextIdx, locale), locale);
   }
