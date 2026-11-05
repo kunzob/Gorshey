@@ -1,0 +1,60 @@
+<!doctype html>
+<!--
+  Tibetan rendering test page (M10 step 2, gorshey-tibetan §6). Served by `npm run e2e` at /__e2e/tibetan-render.html
+  on the preview origin, with the BUILT app stylesheet (the %APP_CSS% link is filled in from dist/index.html), so it
+  tests the real rules and the self-hosted font. No script: tools/e2e.mjs measures it over the DevTools protocol.
+  Screenshot: scratch/e2e/tibetan-render.png.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gorshey: Tibetan rendering test</title>
+    <link rel="stylesheet" href="%APP_CSS%" />
+    <style>
+      body { padding: 24px; overflow: auto; }
+      h2 { font-size: 14px; opacity: 0.7; margin: 24px 0 8px; font-weight: 400; }
+      .frame { padding: 24px; background: var(--color-night); display: inline-block; vertical-align: top; }
+      .probe { margin: 0; font-size: 20px; }
+      .show-box .probe { outline: 1px dashed rgba(201, 162, 74, 0.5); }
+      .narrow { width: 9em; }
+      .fallback :lang(bo) { font-family: "Gorshey Tibetan Fallback", serif; }
+      /* Collision probe: two one-line paragraphs stacked like two lines of the title (same rule, same line height),
+         red and green ink blended with screen; a yellow pixel is ink of one line touching ink of the other. */
+      .collide { isolation: isolate; background: #000; white-space: nowrap; padding: 16px; }
+      .collide .title { mix-blend-mode: screen; display: block; min-height: 0; overflow: visible; }
+      .tight .title { font-size: 20px; }
+    </style>
+  </head>
+  <body>
+    <h1 class="station">Gorshey · <span lang="bo">སྒོར་གཞས།</span></h1>
+
+    <h2>Stack depth, one line each (dashed: the line box)</h2>
+    <div class="frame show-box"><p class="probe sample" lang="bo">བཀྲ་ཤིས་བདེ་ལེགས།</p></div>
+    <div class="frame show-box"><p class="probe sample" lang="bo">སྒྲོལ་མ།</p></div>
+    <div class="frame show-box"><p class="probe sample" lang="bo">རྒྱ་མཚོ།</p></div>
+    <div class="frame show-box"><p class="probe sample" lang="bo">བསྒྲུབས།</p></div>
+    <div class="frame show-box"><p class="probe sample" lang="bo">ཀྱཻ།</p></div>
+    <div class="frame show-box"><p class="probe sample" lang="bo">སྒྲོལ་མ་ཀྲུ་ཀྲུ་ཕྱུག་པོ།</p></div>
+    <div class="frame show-box"><p class="probe sample" lang="bo">ཧཱུྃ། ཨོཾ་མ་ཎི་པདྨེ་ཧཱུྃ།</p></div>
+
+    <h2>The player's .title rule (two-line clamp) with a long title: nothing may be cut</h2>
+    <div class="frame narrow tight"><p id="title" class="title" lang="bo">རྒྱ་མཚོ། བསྒྲུབས་པའི་རྒྱ་མཚོ་ཆེན་པོའི་གཞས་དང་བཀྲ་ཤིས་བདེ་ལེགས། ཀྱཻ། རྒྱ་མཚོ།</p></div>
+
+    <h2>Two-line title in a narrow box (wraps after tsheg)</h2>
+    <div class="frame narrow"><p id="wrap" class="probe" lang="bo">བསྒྲུབས་པའི་རྒྱ་མཚོ་ཆེན་པོའི་གཞས་དང་བཀྲ་ཤིས་བདེ་ལེགས།</p></div>
+
+    <h2>Collision probe: deep stacks on line 1 over tall vowels on line 2 (title line height)</h2>
+    <div id="collide" class="collide tight" lang="bo">
+      <p class="title" style="color: #f00">བསྒྲུབས་བསྒྲུབས་བསྒྲུབས་བསྒྲུབས་བསྒྲུབས།</p>
+      <p id="collide-2" class="title" style="color: #0f0">རྒྱ་མཚོ་རྒྱ་མཚོ་ཧཱུྃ་ཀྱཻ་རྒྱ་མཚོ་ཀྱཻ།</p>
+    </div>
+
+    <h2>Next to Latin (readable size)</h2>
+    <p id="mixed" class="probe">Next up: <span lang="bo">བཀྲ་ཤིས་བདེ་ལེགས།</span> / Tashi Delek</p>
+
+    <h2>Fallback font (no web font): same line box</h2>
+    <div class="fallback"><p id="fallback" class="probe" lang="bo">བསྒྲུབས། ཀྱཻ།</p></div>
+    <p id="webfont" class="probe" lang="bo">བསྒྲུབས། ཀྱཻ།</p>
+  </body>
+</html>
