@@ -24,6 +24,26 @@ Measurements and screenshots live in `scratch/m10/` (git-ignored).
 Not automated here: WebKit/Safari, Firefox, real phones, screen readers, two-device sync. The Tibetan page checks run in Chrome only:
 open the same page in Safari by hand (run `npm run e2e`, or serve `tests/tibetan-render.html` with the built CSS).
 
+## Simulated device matrix (agent, Chromium emulation, 2026-11-05)
+
+Chromium with Playwright device profiles against `vite preview` of the production build: emulation, **not** real
+devices (no WebKit, no real lock screen, no OS audio policy). WebSocket stubbed; manifest and audio answered locally
+except in the offline run. Script and screenshots: `scratch/devsim/` (git-ignored). The real-device tables below
+still need Kunshe.
+
+| Check | Result |
+| :--- | :--- |
+| Fits without scrolling, real titles (en / bo) | iPhone SE 3rd gen, iPhone 13, iPhone 15 Pro Max, Pixel 7, Galaxy S8, Galaxy S9+, iPad Mini: fit in both. iPhone SE 1st gen (320x568): en fits, bo scrolls 47 px (main: 54 px), ring already at its 160 px minimum |
+| Fits with a long title and long next-up (stress) | every profile above except iPhone SE 1st gen (en 587/568, bo 641/568) |
+| First tap plays, one media element, pause works | pass on every profile, en and bo |
+| Lock-screen metadata (Media Session title + artwork) | set on every profile, en and bo |
+| Two devices side by side | 0.02-0.17 s apart, also across a track boundary; position within 0.1 s of the global clock |
+| Background: page frozen 6 s, then visible | still playing, 0.05-0.38 s apart from a device that stayed open |
+| Play/pause column jump; boot CLS | 0 px; 0 (Galaxy S8 en/bo, iPhone 13 bo) |
+| Paused track boundary on a tight screen | Galaxy S8 bo: CLS 0.023, the ring regrows 248 -> 257 px (main: 0.006, but the page scrolled 21 px and boot CLS was 0.154) |
+| Service worker; installable | controls the page after one reload; Chrome installability check: no errors |
+| Offline reload (airplane) | shell and the cached track load; "You are offline." shown at once |
+
 ## Desktop (Kunshe, now)
 
 | Check | Chrome | Firefox | Safari (mac) |

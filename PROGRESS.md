@@ -579,3 +579,17 @@ every alert is in a dev, test, lint or build tool.
   patterns, never through user input. Re-run `npm audit` when those packages release fixes on their current majors.
 - Verified after the update: lint clean, 670 tests pass (1 skipped), build OK (0 secret-like hits, 12 precache
   entries, 50.3 of 60 KB), `npm run e2e` 29/29.
+
+### Ring and device simulation (agent, 2026-11-05)
+- **The ring gives way instead of the page scrolling (c4d6147).** Device emulation with the real titles showed the
+  465 px allowance (547d9c1) could not help where the ring is width-bound or already at 160 px (iPhone SE 1st gen en
+  started to scroll, Galaxy S8 bo got worse). The halo is now the one row that shrinks (`flex: 0 1 auto`,
+  `aspect-ratio: 1`, `min-height: 160px`; `.player` `height: 100dvh`, `justify-content: safe center`) and the
+  allowance is back to 430 px, so the ring is exactly as large as on main wherever main fitted. This replaces the
+  "smaller ring below 765 px" item: no visual sign-off needed for it any more.
+- Simulated device matrix in `docs/QA-CHECKLIST.md` (Chromium emulation, not real devices): 41/43. The two failures
+  are the iPhone SE 1st gen (320x568) with a long title; with the real titles it scrolls 47 px in bo only.
+  **Open (design decision):** a smaller minimum ring or tighter spacing for screens under about 600 px of height.
+- Investigated and dropped: an apparent "frozen tab plays silence" bug. It came from the simulation fixture (an audio
+  file shorter than its manifest duration); with matching durations a frozen page keeps playing and stays in sync.
+  No engine change.
