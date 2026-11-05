@@ -9,3 +9,11 @@ describe('boot fetches in parallel (M10)', () => {
     expect(main).not.toMatch(/await measureOffset\(\)/);
   });
 });
+
+describe('native UI follows the night theme (M10)', () => {
+  it('declares color-scheme dark on :root, and light on the (disabled) light theme slot', () => {
+    const tokens = readFileSync('src/styles/tokens.css', 'utf8');
+    expect(tokens).toMatch(/:root\s*\{[^}]*color-scheme:\s*dark/);
+    expect(tokens).toMatch(/:root\[data-theme="light"\]\s*\{[^}]*color-scheme:\s*light/);
+  });
+});

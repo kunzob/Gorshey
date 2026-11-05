@@ -1,5 +1,6 @@
 /* Potala night tokens (ARCHITECTURE §7). Functional values only; theme polish comes later. */
 :root {
+  color-scheme: dark; /* native UI (scrollbars, focus, form controls) matches the night theme */
   --color-night: #0d0f14;
   --color-whitewash: #f2ede4;
   --color-maroon: #8a7370;
@@ -22,6 +23,7 @@
 
 /* Light-mode slots are defined but not enabled (ARCHITECTURE §7). */
 :root[data-theme="light"] {
+  color-scheme: light;
   --color-night: #f2ede4;
   --color-whitewash: #0d0f14;
   --color-maroon: #6b4f4b;
